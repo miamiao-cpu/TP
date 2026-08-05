@@ -1,0 +1,54 @@
+# TP 价格采集 + 部署到 GitHub Pages
+# 触发方式：1) 用户在 Agent 里说"更新价格"（指令驱动，主方式）
+#         2) 每周一 UTC 00:00 兜底自动更新（保底）
+#         3) GitHub Actions 页面手动 Run workflow
+name: Price Fetch & Deploy
+
+on:
+  schedule:
+    - cron: '0 0 * * 1'
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  fetch-and-deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - name: Install dependencies
+        run: npm ci
+      - name: Fetch prices
+        run: node scripts/daily-fetch.mjs
+      - name: Commit updated prices
+        run: |
+          git config user.name "TP Bot"
+          git config user.email "tp-bot@tokenprice.dev"
+          git add src/data/prices.json
+          git diff --cached --quiet || git commit -m "chore: update prices $(date +%Y-%m-%d)"
+          git push
+      - name: Build
+        run: npm run build
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+      - name: Deploy to GitHub Pages
+        id: deploy
+        uses: actions/deploy-pages@v4
