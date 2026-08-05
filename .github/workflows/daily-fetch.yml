@@ -1,7 +1,4 @@
 # TP 价格采集 + 部署到 GitHub Pages
-# 触发方式：1) 用户在 Agent 里说"更新价格"（指令驱动，主方式）
-#         2) 每周一 UTC 00:00 兜底自动更新（保底）
-#         3) GitHub Actions 页面手动 Run workflow
 name: Price Fetch & Deploy
 
 on:
@@ -28,10 +25,10 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
       - name: Install dependencies
-        run: npm ci
+        run: npm install
       - name: Fetch prices
         run: node scripts/daily-fetch.mjs
       - name: Commit updated prices
