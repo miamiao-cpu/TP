@@ -1,0 +1,59 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply font-sans;
+  }
+}
+
+@layer components {
+  .badge {
+    @apply inline-flex items-center px-2 py-0.5 rounded text-xs font-medium;
+  }
+  .badge-red {
+    @apply badge bg-dx-red-50 text-dx-red;
+  }
+  .badge-gray {
+    @apply badge bg-dx-gray-100 text-dx-gray-600;
+  }
+  .badge-green {
+    @apply badge bg-green-50 text-green-700;
+  }
+  .badge-blue {
+    @apply badge bg-blue-50 text-blue-700;
+  }
+  .card {
+    @apply bg-white rounded-lg border border-dx-gray-200 shadow-sm;
+  }
+  .btn-primary {
+    @apply bg-dx-red text-white px-4 py-2 rounded-md text-sm font-medium
+           hover:bg-dx-red-dark transition-colors duration-150;
+  }
+  .btn-secondary {
+    @apply bg-white text-dx-gray-700 px-4 py-2 rounded-md text-sm font-medium
+           border border-dx-gray-200 hover:bg-dx-gray-50 transition-colors duration-150;
+  }
+  .tab-active {
+    @apply text-dx-red border-b-2 border-dx-red font-semibold;
+  }
+  .tab-inactive {
+    @apply text-dx-gray-500 hover:text-dx-gray-700 border-b-2 border-transparent;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-dx-gray-300 rounded-full;
+}
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-dx-gray-400;
+}

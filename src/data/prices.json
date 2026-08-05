@@ -1,0 +1,156 @@
+{
+  "_meta": {
+    "generatedAt": "2026-08-05T07:07:35.568Z",
+    "sources": [
+      "openrouter"
+    ],
+    "exchangeRate": 7.25,
+    "currency": "CNY/百万Token",
+    "version": 3
+  },
+  "prices": {
+    "deepseek-v4-flash": {
+      "openrouter": {
+        "input": 1.02,
+        "output": 2.03,
+        "cache": 0.2,
+        "batch": null,
+        "contextLength": 1048576,
+        "source": "auto",
+        "updated": "2026-08-05"
+      }
+    },
+    "claude-opus-5": {
+      "openrouter": {
+        "input": 36.25,
+        "output": 181.25,
+        "cache": 3.63,
+        "batch": null,
+        "contextLength": 1000000,
+        "source": "auto",
+        "updated": "2026-08-05"
+      }
+    },
+    "gemini-3.6-flash": {
+      "openrouter": {
+        "input": 10.88,
+        "output": 54.38,
+        "cache": 1.09,
+        "batch": null,
+        "contextLength": 1048576,
+        "source": "auto",
+        "updated": "2026-08-05"
+      }
+    },
+    "gpt-5.6-luna": {
+      "openrouter": {
+        "input": 0.73,
+        "output": 4.35,
+        "cache": 0.07,
+        "batch": null,
+        "contextLength": 1050000,
+        "source": "auto",
+        "updated": "2026-08-05"
+      }
+    },
+    "claude-sonnet-5": {
+      "openrouter": {
+        "input": 14.5,
+        "output": 72.5,
+        "cache": 1.45,
+        "batch": null,
+        "contextLength": 1000000,
+        "source": "auto",
+        "updated": "2026-08-05"
+      }
+    },
+    "claude-fable-5": {
+      "openrouter": {
+        "input": 72.5,
+        "output": 362.5,
+        "cache": 7.25,
+        "batch": null,
+        "contextLength": 1000000,
+        "source": "auto",
+        "updated": "2026-08-05"
+      }
+    },
+    "grok-4": {
+      "openrouter": {
+        "input": 9.06,
+        "output": 18.13,
+        "cache": 1.45,
+        "batch": null,
+        "contextLength": 1000000,
+        "source": "auto",
+        "updated": "2026-08-05"
+      }
+    },
+    "gemini-3.1-pro": {
+      "openrouter": {
+        "input": 14.5,
+        "output": 87,
+        "cache": 1.45,
+        "batch": null,
+        "contextLength": 1048576,
+        "source": "auto",
+        "updated": "2026-08-05"
+      }
+    },
+    "mistral-large-3": {
+      "openrouter": {
+        "input": 3.63,
+        "output": 10.88,
+        "cache": 0.36,
+        "batch": null,
+        "contextLength": 262144,
+        "source": "auto",
+        "updated": "2026-08-05"
+      }
+    },
+    "deepseek-v3.2": {
+      "openrouter": {
+        "input": 1.95,
+        "output": 2.9,
+        "cache": 0.98,
+        "batch": null,
+        "contextLength": 163840,
+        "source": "auto",
+        "updated": "2026-08-05"
+      }
+    },
+    "claude-haiku-4.5": {
+      "openrouter": {
+        "input": 7.25,
+        "output": 36.25,
+        "cache": 0.73,
+        "batch": null,
+        "contextLength": 200000,
+        "source": "auto",
+        "updated": "2026-08-05"
+      }
+    },
+    "gpt-5-mini": {
+      "openrouter": {
+        "input": 1.81,
+        "output": 14.5,
+        "cache": 0.18,
+        "batch": null,
+        "contextLength": 400000,
+        "source": "auto",
+        "updated": "2026-08-05"
+      }
+    },
+    "o4-mini": {
+      "openrouter": {
+        "input": 7.98,
+        "output": 31.9,
+        "cache": 1.99,
+        "batch": null,
+        "contextLength": 200000,
+        "source": "auto",
+        "updated": "2026-08-05"
+      }
+    }
+  }
+}
