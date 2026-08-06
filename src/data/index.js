@@ -1,107 +1,82 @@
 /**
- * TP 数据层
- * 优先读取自动采集的 prices.json，手动数据作为 fallback/补充
+ * TP 数据层（v2 - 支持 modality、多计价单位、国内外分列）
  * 
  * 数据流:
- *   daily-fetch.mjs → prices.json (L1自动 + L2部分) 
- *   models.js       → 手动维护的补充数据 (L2国内平台 + L3折扣)
- *   discounts.js    → 手动维护的折扣信息
+ *   daily-fetch.mjs → prices.json (L1 自动采集)
+ *   models.js       → 手动维护数据 (L2 国内平台 + 海外官方价)
+ *   discounts.js    → 手动维护折扣信息
  */
 
 import rawPrices from './prices.json'
 import MANUAL_MODELS from './models'
 import DISCOUNTS from './discounts'
-import { PLATFORMS } from './constants'
+import { PLATFORMS, MODALITIES, PRICING_UNITS, REGIONS } from './constants'
 
-// 从 prices.json 构建自动采集的模型映射
-function buildAutoModels() {
+// ============================================================
+// 平台地域映射（从 PLATFORMS 常量自动获取）
+// ============================================================
+
+const PLATFORM_MAP = Object.fromEntries(PLATFORMS.map(p => [p.id, p]))
+
+function getPlatformRegion(platformId) {
+  return PLATFORM_MAP[platformId]?.region || 'china'
+}
+
+// ============================================================
+// 从 prices.json + models.js 合并构建完整模型列表
+// ============================================================
+
+function buildModels() {
   const autoData = rawPrices.prices || {}
-  const meta = rawPrices._meta || {}
-  
   const modelMap = {}
-  
+
+  // 1. 从手动数据构建基础
+  for (const model of MANUAL_MODELS) {
+    modelMap[model.id] = {
+      ...model,
+      pricingUnit: model.pricingUnit || 'per_million_tokens',
+      modality: model.modality || 'text->text',
+      _dataSource: 'manual',
+    }
+  }
+
+  // 2. 合并 prices.json 自动采集数据（覆盖 openrouter 等自动来源）
   for (const [modelId, platformPrices] of Object.entries(autoData)) {
-    // 检查是否已有手动数据
-    const manualModel = MANUAL_MODELS.find(m => m.id === modelId)
-    
-    if (manualModel) {
-      // 合并：verified/auto 来源覆盖手动数据中同平台条目
-      const mergedPrices = { ...manualModel.prices }
+    if (modelMap[modelId]) {
+      // 已有手动数据，只覆盖 auto 来源的平台
+      const mergedPrices = { ...modelMap[modelId].prices }
       for (const [platformId, priceInfo] of Object.entries(platformPrices)) {
-        if (priceInfo.source === 'auto' || priceInfo.source === 'verified') {
+        if (priceInfo.source === 'auto') {
           mergedPrices[platformId] = priceInfo
         }
       }
-      modelMap[modelId] = {
-        ...manualModel,
-        prices: mergedPrices,
-        _dataSource: 'hybrid', // 混合来源
-      }
+      modelMap[modelId].prices = mergedPrices
+      modelMap[modelId]._dataSource = 'hybrid'
     } else {
-      // 纯自动数据，构建基本模型结构
+      // 纯自动数据（prices.json 中有但 models.js 没有的）
       modelMap[modelId] = {
         id: modelId,
-        name: formatModelName(modelId),
+        name: modelId,
         provider: guessProvider(modelId),
         tag: guessTag(modelId, platformPrices),
-        contextLength: guessContextLength(modelId),
         modality: 'text->text',
+        pricingUnit: 'per_million_tokens',
+        contextLength: guessContextLength(modelId),
         prices: platformPrices,
         _dataSource: 'auto',
       }
     }
   }
-  
-  // 添加只在手动数据中存在的模型
-  for (const model of MANUAL_MODELS) {
-    if (!modelMap[model.id]) {
-      modelMap[model.id] = { ...model, _dataSource: 'manual' }
-    }
-  }
-  
+
   return Object.values(modelMap)
 }
 
-// 格式化模型名称
-function formatModelName(id) {
-  const map = {
-    'gpt-5.6': 'GPT-5.6',
-    'gpt-5.6-luna': 'GPT-5.6 Luna',
-    'gpt-5-mini': 'GPT-5 mini',
-    'o4-mini': 'o4-mini',
-    'claude-opus-5': 'Claude Opus 5',
-    'claude-sonnet-5': 'Claude Sonnet 5',
-    'claude-haiku-4.5': 'Claude Haiku 4.5',
-    'claude-fable-5': 'Claude Fable 5',
-    'gemini-3.1-pro': 'Gemini 3.1 Pro',
-    'gemini-3.6-flash': 'Gemini 3.6 Flash',
-    'deepseek-v4-flash': 'DeepSeek V4 Flash',
-    'deepseek-v4-pro': 'DeepSeek V4 Pro',
-    'deepseek-v3.2': 'DeepSeek V3.2',
-    'grok-4': 'Grok 4',
-    'mistral-large-3': 'Mistral Large 3',
-    'glm-5.2': 'GLM-5.2',
-    'glm-4-plus': 'GLM-4-Plus',
-    'glm-4-flash': 'GLM-4-Flash',
-    'qwen-max': 'Qwen-Max',
-    'qwen-plus': 'Qwen-Plus',
-    'qwen3.5-397b': 'Qwen3.5-397B',
-    'doubao-seed-2.1-pro': 'Doubao Seed 2.1 Pro',
-    'doubao-seed-2.1-turbo': 'Doubao Seed 2.1 Turbo',
-    'doubao-seed-evolving': 'Doubao Seed Evolving',
-    'doubao-seed-2.0-pro-32k': 'Doubao Seed 2.0 Pro 32K',
-    'doubao-seed-2.0-lite-32k': 'Doubao Seed 2.0 Lite 32K',
-    'doubao-seed-2.0-mini-32k': 'Doubao Seed 2.0 Mini 32K',
-    'doubao-seed-2.0-code-128k': 'Doubao Seed 2.0 Code 128K',
-    'hunyuan-pro': '混元-Pro',
-    'hunyuan-a13b': 'Hunyuan-A13B',
-    'minimax-m2.5': 'MiniMax-M2.5',
-  }
-  return map[id] || id
-}
+// ============================================================
+// 辅助函数
+// ============================================================
 
 function guessProvider(id) {
-  if (id.startsWith('gpt-') || id.startsWith('o4-')) return 'OpenAI'
+  if (id.startsWith('gpt-') || id.startsWith('o4-') || id.startsWith('o3-') || id.startsWith('embedding')) return 'OpenAI'
   if (id.startsWith('claude-')) return 'Anthropic'
   if (id.startsWith('gemini-')) return 'Google'
   if (id.startsWith('deepseek-')) return 'DeepSeek'
@@ -112,15 +87,15 @@ function guessProvider(id) {
   if (id.startsWith('doubao-')) return '字节跳动'
   if (id.startsWith('hunyuan-')) return '腾讯云'
   if (id.startsWith('minimax-')) return 'MiniMax'
+  if (id.startsWith('step-')) return '阶跃星辰'
+  if (id.startsWith('yi-')) return '零一万物'
   return 'Unknown'
 }
 
 function guessTag(id, platformPrices) {
-  // 根据价格判断定位
   const prices = Object.values(platformPrices)
   const avgInput = prices.reduce((s, p) => s + (p.input || 0), 0) / prices.length
-  
-  if (id.includes('flash') || id.includes('air') || id.includes('lite')) return 'small'
+  if (id.includes('flash') || id.includes('air') || id.includes('lite') || id.includes('luna')) return 'small'
   if (avgInput === 0) return 'free'
   if (avgInput > 30) return 'flagship'
   if (avgInput > 5) return 'balanced'
@@ -128,7 +103,6 @@ function guessTag(id, platformPrices) {
 }
 
 function guessContextLength(id) {
-  // 粗略推断
   if (id.includes('5.6') || id.includes('v4-flash') || id.includes('3.6')) return 1049000
   if (id.includes('opus') || id.includes('sonnet') || id.includes('fable')) return 1000000
   if (id.includes('3.1-pro')) return 1049000
@@ -139,21 +113,53 @@ function guessContextLength(id) {
   return 128000
 }
 
+// ============================================================
+// 导出 API
+// ============================================================
+
 // 获取数据更新时间
 export function getLastUpdate() {
   const meta = rawPrices._meta
-  return meta?.generatedAt || '2026-08-03'
+  return meta?.generatedAt || '2026-08-06'
 }
 
 // 获取所有模型
 export function getModels() {
-  return buildAutoModels()
+  return buildModels()
 }
 
 // 获取指定模型
 export function getModel(modelId) {
+  return getModels().find(m => m.id === modelId) || null
+}
+
+// 按 modality 筛选
+export function getModelsByModality(modality) {
+  if (!modality || modality === 'all') return getModels()
+  return getModels().filter(m => m.modality === modality)
+}
+
+// 获取所有 modality 类型及计数
+export function getModalityCounts() {
   const models = getModels()
-  return models.find(m => m.id === modelId)
+  const counts = {}
+  for (const m of models) {
+    const key = m.modality || 'text->text'
+    counts[key] = (counts[key] || 0) + 1
+  }
+  return counts
+}
+
+// 获取模型的国内价格和海外价格（分离显示用）
+export function getModelPricesByRegion(model) {
+  const domestic = {}
+  const overseas = {}
+  for (const [platformId, price] of Object.entries(model.prices || {})) {
+    const region = getPlatformRegion(platformId)
+    if (region === 'china') domestic[platformId] = price
+    else overseas[platformId] = price
+  }
+  return { domestic, overseas }
 }
 
 // 获取折扣信息
@@ -175,6 +181,29 @@ export function getCoveredPlatforms() {
     }
   }
   return [...platformIds]
+}
+
+// 获取指定平台的所有模型（用于"按平台查询"页面展示完整模型列表）
+export function getModelsByPlatform(platformId) {
+  return getModels().filter(m => m.prices && m.prices[platformId])
+}
+
+// 获取统计摘要（用于总览页）
+export function getStats() {
+  const models = getModels()
+  const total = models.length
+  const modalityCounts = getModalityCounts()
+  const coveredPlatforms = getCoveredPlatforms()
+  const platformCount = coveredPlatforms.length
+  // 最便宜的文本模型输入价
+  const textModels = models.filter(m => m.pricingUnit === 'per_million_tokens' && m.modality === 'text->text')
+  const cheapestInput = textModels.length > 0
+    ? Math.min(...textModels.map(m => {
+        const prices = Object.values(m.prices)
+        return Math.min(...prices.map(p => p.input || Infinity))
+      }))
+    : 0
+  return { total, platformCount, modalityCounts, cheapestInput }
 }
 
 export default getModels

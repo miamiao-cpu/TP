@@ -4,6 +4,7 @@ import Dashboard from './components/Dashboard'
 import ModelView from './components/ModelView'
 import PlatformView from './components/PlatformView'
 import CompareView from './components/CompareView'
+import ModelDetailView from './components/ModelDetailView'
 import { CurrencyProvider } from './components/CurrencyContext'
 import getModels, { getLastUpdate } from './data/index'
 import { PLATFORMS } from './data/constants'
@@ -21,6 +22,7 @@ function App() {
     { id: 'model', label: '按模型查询', icon: '🔍' },
     { id: 'platform', label: '按平台查询', icon: '🏢' },
     { id: 'compare', label: '价格对比', icon: '⚖️' },
+    { id: 'detail', label: '模型详情', icon: '📈' },
   ]
 
   return (
@@ -56,6 +58,7 @@ function App() {
           {activeTab === 'model' && <ModelView models={models} />}
           {activeTab === 'platform' && <PlatformView models={models} platforms={PLATFORMS} />}
           {activeTab === 'compare' && <CompareView models={models} />}
+          {activeTab === 'detail' && <ModelDetailView models={models} />}
         </main>
 
         {/* 底部 */}

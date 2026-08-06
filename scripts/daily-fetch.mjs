@@ -13,12 +13,13 @@
  * 国内平台价格: 请编辑 src/data/models.js 手工维护
  */
 
-import { writeFileSync, mkdirSync, existsSync, readFileSync } from 'fs'
+import { writeFileSync, mkdirSync, existsSync, readFileSync, readdirSync } from 'fs'
 import { resolve, dirname } from 'path'
 import { fileURLToPath } from 'url'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const DATA_DIR = resolve(__dirname, '../src/data')
+const HISTORY_DIR = resolve(__dirname, '../price-history')
 const EXCHANGE_RATE = 7.25
 
 // ============================================================
@@ -185,9 +186,12 @@ async function main() {
 
   // 写入 JSON
   const outputPath = resolve(DATA_DIR, 'prices.json')
+  const now = new Date()
+  const dateStr = today()
+
   const outputData = {
     _meta: {
-      generatedAt: new Date().toISOString(),
+      generatedAt: now.toISOString(),
       sources: ['openrouter'],
       exchangeRate: EXCHANGE_RATE,
       currency: 'CNY/百万Token',
@@ -201,6 +205,41 @@ async function main() {
   }
 
   writeFileSync(outputPath, JSON.stringify(outputData, null, 2), 'utf-8')
+
+  // ============================================================
+  // 保存历史价格快照（price-history/YYYY-MM-DD.json）
+  // 仅保留最近90天，避免仓库膨胀
+  // ============================================================
+  if (!existsSync(HISTORY_DIR)) {
+    mkdirSync(HISTORY_DIR, { recursive: true })
+  }
+
+  // 保存今日快照
+  const historyPath = resolve(HISTORY_DIR, `${dateStr}.json`)
+  if (!existsSync(historyPath)) {
+    writeFileSync(historyPath, JSON.stringify(outputData, null, 2), 'utf-8')
+    console.log(`[TP-HISTORY] 快照已保存: ${historyPath}`)
+  } else {
+    console.log(`[TP-HISTORY] 今日快照已存在，跳过`)
+  }
+
+  // 清理 90 天前的旧快照
+  const cutoff = new Date()
+  cutoff.setDate(cutoff.getDate() - 90)
+  const cutoffStr = cutoff.toISOString().split('T')[0]
+
+  try {
+    const files = readdirSync(HISTORY_DIR)
+    for (const file of files) {
+      if (file.endsWith('.json') && file.replace('.json', '') < cutoffStr) {
+        const filePath = resolve(HISTORY_DIR, file)
+        writeFileSync(filePath, JSON.stringify({ _archived: true, archivedAt: now.toISOString() }), 'utf-8')
+        console.log(`[TP-HISTORY] 归档旧快照: ${file}`)
+      }
+    }
+  } catch (err) {
+    console.warn('[TP-HISTORY] 清理旧快照失败:', err.message)
+  }
 
   const coveredPlatforms = new Set(modelIds.flatMap(id => Object.keys(merged[id])))
   console.log(`\n[TP] 价格数据已写入: ${outputPath}`)

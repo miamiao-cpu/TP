@@ -1,16 +1,12 @@
 import { useState, useMemo } from 'react'
 import { useCurrency, CURRENCY } from './CurrencyContext'
-import { PLATFORMS, MODEL_TAGS } from '../data/constants'
-import { formatPrice, formatContextLength } from '../utils/priceUtils'
+import { PLATFORMS, MODEL_TAGS, MODALITIES } from '../data/constants'
+import { formatPrice, formatContextLength, convertPrice } from '../utils/priceUtils'
 
 export default function CompareView({ models }) {
   const { currency } = useCurrency()
   const [selectedModels, setSelectedModels] = useState([])
-  const [sortBy, setSortBy] = useState('input') // input / output / avg
-
-  function convertPrice(cny) {
-    return currency === CURRENCY.USD ? cny / 7.25 : cny
-  }
+  const [sortBy, setSortBy] = useState('input')
 
   function toggleModel(id) {
     setSelectedModels((prev) =>
@@ -23,29 +19,36 @@ export default function CompareView({ models }) {
     return models
       .filter((m) => selectedModels.includes(m.id))
       .map((model) => {
-        // 收集所有平台价格
-        const platformPrices = Object.entries(model.prices).map(([platformId, price]) => {
+        // 按国内外分组
+        const domesticPrices = []
+        const overseasPrices = []
+        for (const [platformId, price] of Object.entries(model.prices)) {
           const platform = PLATFORMS.find((p) => p.id === platformId)
-          return {
+          const entry = {
             platformId,
             platformName: platform?.nameCn || platformId,
             platformColor: platform?.color || '#999',
-            input: convertPrice(price.input),
-            output: convertPrice(price.output),
-            cache: price.cache !== null ? convertPrice(price.cache) : null,
-            avg: (convertPrice(price.input) + convertPrice(price.output)) / 2,
+            region: platform?.region || 'unknown',
+            input: convertPrice(price.input, currency),
+            output: convertPrice(price.output, currency),
+            cache: price.cache !== null ? convertPrice(price.cache, currency) : null,
+            avg: (convertPrice(price.input, currency) + convertPrice(price.output, currency)) / 2,
           }
-        })
+          if (entry.region === 'china') domesticPrices.push(entry)
+          else overseasPrices.push(entry)
+        }
 
-        // 找到最便宜的平台
-        const cheapest = platformPrices.sort((a, b) => a[sortBy] - b[sortBy])[0]
+        const allPrices = [...domesticPrices, ...overseasPrices]
+        const cheapest = allPrices.sort((a, b) => a[sortBy] - b[sortBy])[0]
 
         return {
           ...model,
-          platformPrices,
+          domesticPrices,
+          overseasPrices,
+          allPrices,
           cheapest,
-          minInput: Math.min(...platformPrices.map((p) => p.input)),
-          minOutput: Math.min(...platformPrices.map((p) => p.output)),
+          minInput: Math.min(...allPrices.map((p) => p.input)),
+          minOutput: Math.min(...allPrices.map((p) => p.output)),
         }
       })
       .sort((a, b) => {
@@ -116,52 +119,56 @@ export default function CompareView({ models }) {
                   <th className="text-left px-4 py-2.5 text-dx-gray-500 font-medium sticky left-0 bg-dx-gray-50">模型</th>
                   <th className="text-left px-4 py-2.5 text-dx-gray-500 font-medium">厂商</th>
                   <th className="text-left px-4 py-2.5 text-dx-gray-500 font-medium">定位</th>
+                  <th className="text-left px-4 py-2.5 text-dx-gray-500 font-medium">模态</th>
                   <th className="text-right px-4 py-2.5 text-dx-gray-500 font-medium">最低输入价</th>
                   <th className="text-right px-4 py-2.5 text-dx-gray-500 font-medium">最低输出价</th>
                   <th className="text-right px-4 py-2.5 text-dx-gray-500 font-medium">上下文</th>
                   <th className="text-left px-4 py-2.5 text-dx-gray-500 font-medium">最便宜平台</th>
-                  <th className="text-left px-4 py-2.5 text-dx-gray-500 font-medium">各平台明细</th>
+                  <th className="text-left px-4 py-2.5 text-dx-gray-500 font-medium">覆盖平台</th>
                 </tr>
               </thead>
               <tbody>
-                {comparedModels.map((model) => (
-                  <tr key={model.id} className="border-b border-dx-gray-50 hover:bg-dx-gray-50">
-                    <td className="px-4 py-2.5 font-semibold text-dx-gray-900 sticky left-0 bg-white">{model.name}</td>
-                    <td className="px-4 py-2.5 text-dx-gray-500">{model.provider}</td>
-                    <td className="px-4 py-2.5">
-                      <ModelTag tag={model.tag} />
-                    </td>
-                    <td className="px-4 py-2.5 text-right font-mono font-bold text-dx-red">
-                      {formatPrice(model.minInput, currency)}
-                    </td>
-                    <td className="px-4 py-2.5 text-right font-mono font-bold text-dx-red">
-                      {formatPrice(model.minOutput, currency)}
-                    </td>
-                    <td className="px-4 py-2.5 text-right font-mono text-dx-gray-500">
-                      {formatContextLength(model.contextLength)}
-                    </td>
-                    <td className="px-4 py-2.5">
-                      {model.cheapest && (
-                        <span className="badge-green badge">
-                          {model.cheapest.platformName}
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-4 py-2.5">
-                      <div className="flex flex-wrap gap-1">
-                        {model.platformPrices.map((pp) => (
-                          <span
-                            key={pp.platformId}
-                            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs bg-dx-gray-50"
-                          >
-                            <span className="w-1.5 h-1.5 rounded-full" style={{ background: pp.platformColor }}></span>
-                            {pp.platformName}
+                {comparedModels.map((model) => {
+                  const modInfo = MODALITIES[model.modality]
+                  return (
+                    <tr key={model.id} className="border-b border-dx-gray-50 hover:bg-dx-gray-50">
+                      <td className="px-4 py-2.5 font-semibold text-dx-gray-900 sticky left-0 bg-white whitespace-nowrap">{model.name}</td>
+                      <td className="px-4 py-2.5 text-dx-gray-500">{model.provider}</td>
+                      <td className="px-4 py-2.5">
+                        <ModelTag tag={model.tag} />
+                      </td>
+                      <td className="px-4 py-2.5 text-center">
+                        <span title={modInfo?.label || model.modality}>{modInfo?.icon || '📝'}</span>
+                      </td>
+                      <td className="px-4 py-2.5 text-right font-mono font-bold text-dx-red">
+                        {formatPrice(model.minInput, currency)}
+                      </td>
+                      <td className="px-4 py-2.5 text-right font-mono font-bold text-dx-red">
+                        {formatPrice(model.minOutput, currency)}
+                      </td>
+                      <td className="px-4 py-2.5 text-right font-mono text-dx-gray-500">
+                        {formatContextLength(model.contextLength)}
+                      </td>
+                      <td className="px-4 py-2.5">
+                        {model.cheapest && (
+                          <span className="badge-green badge">
+                            {model.cheapest.platformName}
                           </span>
-                        ))}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                        )}
+                      </td>
+                      <td className="px-4 py-2.5">
+                        <div className="flex flex-wrap gap-1">
+                          {model.domesticPrices.length > 0 && (
+                            <span className="badge-red badge text-xs">国内 {model.domesticPrices.length}</span>
+                          )}
+                          {model.overseasPrices.length > 0 && (
+                            <span className="badge-blue badge text-xs">海外 {model.overseasPrices.length}</span>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           </div>
