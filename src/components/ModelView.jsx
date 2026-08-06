@@ -14,10 +14,16 @@ export default function ModelView({ models }) {
   const [listSort, setListSort] = useState('price-asc') // price-asc | price-desc | new | old
   const [selectedModel, setSelectedModel] = useState(null)
 
-  // 模型最新更新日期
+  // 模型最新更新日期（取最大日期）
   function latestUpdated(model) {
     const dates = Object.values(model.prices || {}).map(p => p.updated).filter(Boolean)
     return dates.length ? dates.reduce((a, b) => a > b ? a : b) : '0000-00-00'
+  }
+
+  // 模型最早更新日期（取最小日期）
+  function earliestUpdated(model) {
+    const dates = Object.values(model.prices || {}).map(p => p.updated).filter(Boolean)
+    return dates.length ? dates.reduce((a, b) => a < b ? a : b) : '9999-99-99'
   }
 
   // 筛选 + 排序模型
@@ -29,8 +35,14 @@ export default function ModelView({ models }) {
       return matchSearch && matchTag && matchModality
     })
     return [...filtered].sort((a, b) => {
-      if (listSort === 'new') return latestUpdated(b).localeCompare(latestUpdated(a))
-      if (listSort === 'old') return latestUpdated(a).localeCompare(latestUpdated(b))
+      if (listSort === 'new') {
+        const diff = latestUpdated(b).localeCompare(latestUpdated(a))
+        return diff !== 0 ? diff : b.id.localeCompare(a.id) // 日期相同则按 ID 逆序（最新添加优先）
+      }
+      if (listSort === 'old') {
+        const diff = earliestUpdated(a).localeCompare(earliestUpdated(b))
+        return diff !== 0 ? diff : a.id.localeCompare(b.id) // 日期相同则按 ID 顺序（最早添加优先）
+      }
       const aOut = convertPrice(getCheapestOutput(a).output, currency) || Infinity
       const bOut = convertPrice(getCheapestOutput(b).output, currency) || Infinity
       return listSort === 'price-desc' ? bOut - aOut : aOut - bOut

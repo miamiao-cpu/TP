@@ -10,7 +10,7 @@ export default function PlatformView({ models, platforms }) {
   const [tagFilter, setTagFilter] = useState('all')
   const [searchFilter, setSearchFilter] = useState('')
 
-  // 统计每个平台覆盖的模型
+  // 统计每个平台覆盖的模型 + 丰富信息
   const platformModels = useMemo(() => {
     const map = {}
     for (const platform of platforms) {
@@ -47,69 +47,103 @@ export default function PlatformView({ models, platforms }) {
     })
   }, [activePlatformData, tagFilter, searchFilter])
 
-  // 各平台价格范围（最低输入价 ~ 最高输入价）
-  const platformPriceRange = useMemo(() => {
-    const ranges = {}
+  // 各平台丰富信息
+  const platformInfo = useMemo(() => {
+    const info = {}
     for (const { platform, models: pModels } of platformModels) {
+      // 价格范围
       const inputs = pModels.map(m => m.price.input).filter(v => v > 0)
       const outputs = pModels.map(m => m.price.output).filter(v => v > 0)
-      ranges[platform.id] = {
+
+      // 模态分布
+      const modalitySet = new Set(pModels.map(m => m.modality))
+      const modalityIcons = [...modalitySet].map(k => MODALITIES[k]?.icon || '📝').join(' ')
+
+      // 最低价模型
+      const cheapestForOutput = [...pModels].sort((a, b) => (a.price.output || Infinity) - (b.price.output || Infinity))[0]
+      const cheapestForInput = [...pModels].sort((a, b) => (a.price.input || Infinity) - (b.price.input || Infinity))[0]
+
+      // 免费模型数
+      const freeCount = pModels.filter(m => m.price.input === 0 && m.price.output === 0).length
+
+      // 平台 logic 中本地模型数 vs 代理模型数
+      const localCount = pModels.filter(m => m.country === platform.country).length
+
+      // Top 模型名（最多 3 个）
+      const topNames = pModels.sort((a, b) => (a.price.output || Infinity) - (b.price.output || Infinity))
+        .slice(0, 3).map(m => m.name).join('、')
+
+      info[platform.id] = {
         minInput: inputs.length ? Math.min(...inputs) : 0,
         maxInput: inputs.length ? Math.max(...inputs) : 0,
         minOutput: outputs.length ? Math.min(...outputs) : 0,
         maxOutput: outputs.length ? Math.max(...outputs) : 0,
+        modalityIcons,
+        freeCount,
+        localCount,
+        topNames,
+        cheapestForOutput,
+        cheapestForInput,
       }
     }
-    return ranges
+    return info
   }, [platformModels])
 
   return (
     <div className="space-y-4">
-      {/* 平台选择 */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
-        {platformModels.map(({ platform, models: pModels }) => {
-          const range = platformPriceRange[platform.id]
-          const isFree = range?.minInput === 0 && range?.maxInput === 0
-          return (
-            <button
-              key={platform.id}
-              onClick={() => {
-                setSelectedPlatform(platform.id === selectedPlatform ? null : platform.id)
-                setTagFilter('all')
-                setSearchFilter('')
-              }}
-              className={`card p-3 text-left transition-all hover:shadow-md ${
-                selectedPlatform === platform.id ? 'ring-2 ring-dx-red border-dx-red' : ''
-              }`}
-            >
-              <div className="flex items-center gap-2 mb-2">
-                <span className="w-3 h-3 rounded-full" style={{ background: platform.color }}></span>
-                <span className="font-semibold text-sm text-dx-gray-900 truncate">{platform.nameCn}</span>
-              </div>
-              <div className="text-2xl font-bold text-dx-gray-900">{pModels.length}</div>
-              <div className="text-xs text-dx-gray-400">个模型</div>
-              {!isFree && (
-                <div className="mt-1.5 text-xs text-dx-gray-400">
-                  <span className="font-mono text-dx-gray-600">{formatPrice(convertPrice(range.minInput, currency), currency)}</span>
-                  <span className="mx-0.5">~</span>
-                  <span className="font-mono text-dx-gray-600">{formatPrice(convertPrice(range.maxInput, currency), currency)}</span>
+      {/* 平台选择 — 单行横向滚动 + 紧凑卡片 */}
+      <div className="card p-3">
+        <div className="flex overflow-x-auto gap-2 pb-2 scrollbar-thin">
+          {platformModels.map(({ platform, models: pModels }) => {
+            const info = platformInfo[platform.id]
+            return (
+              <button
+                key={platform.id}
+                onClick={() => {
+                  setSelectedPlatform(platform.id === selectedPlatform ? null : platform.id)
+                  setTagFilter('all')
+                  setSearchFilter('')
+                }}
+                className={`flex-shrink-0 w-44 p-2.5 rounded-lg text-left transition-all hover:shadow-sm border group ${
+                  selectedPlatform === platform.id
+                    ? 'ring-2 ring-dx-red border-dx-red shadow-sm'
+                    : 'border-dx-gray-100 hover:border-dx-gray-200'
+                }`}
+              >
+                {/* 平台名称 + 模型数 */}
+                <div className="flex items-center gap-1.5 mb-1">
+                  <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: platform.color }}></span>
+                  <span className="font-semibold text-xs text-dx-gray-900 truncate">{platform.nameCn}</span>
+                  <span className="text-xs font-mono font-bold text-dx-red ml-auto">{pModels.length}</span>
                 </div>
-              )}
-              <div className="mt-2 flex gap-1">
-                <span className="badge-blue badge">{COUNTRIES[platform.country]?.flag || '🏳️'} {COUNTRIES[platform.country]?.label || platform.country}</span>
-                <span className="badge-gray badge">
-                  {platform.type === 'official' ? '官方' : '代理'}
-                </span>
-              </div>
-            </button>
-          )
-        })}
+
+                {/* 价格范围 */}
+                <div className="text-xs text-dx-gray-400 mb-1">
+                  <span className="font-mono text-dx-gray-600">{formatPrice(convertPrice(info.minInput, currency), currency)}</span>
+                  <span className="mx-0.5">~</span>
+                  <span className="font-mono text-dx-gray-600">{formatPrice(convertPrice(info.maxInput, currency), currency)}</span>
+                </div>
+
+                {/* 标签行 */}
+                <div className="flex items-center gap-1 flex-wrap">
+                  <span className="badge-gray badge text-[10px]">{COUNTRIES[platform.country]?.flag} {COUNTRIES[platform.country]?.label || platform.country}</span>
+                  {info.freeCount > 0 && <span className="badge-green badge text-[10px]">{info.freeCount}免费</span>}
+                  <span className="text-[10px] text-dx-gray-400">{info.modalityIcons}</span>
+                </div>
+
+                {/* Top 模型（hover 才显示） */}
+                <div className="mt-1 text-[10px] text-dx-gray-400 truncate opacity-0 group-hover:opacity-100 transition-opacity">
+                  {info.topNames}
+                </div>
+              </button>
+            )
+          })}
+        </div>
       </div>
 
       {/* 选中平台的模型列表 */}
       {activePlatformData ? (
         <div className="space-y-4">
-          {/* 平台信息头 + 筛选 */}
           <div className="card p-0 overflow-hidden">
             <div className="px-4 py-3 flex items-center justify-between" style={{ background: activePlatformData.platform.color + '15' }}>
               <div className="flex items-center gap-2">
@@ -145,7 +179,6 @@ export default function PlatformView({ models, platforms }) {
               </div>
             </div>
 
-            {/* 模型列表 */}
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
@@ -205,7 +238,6 @@ export default function PlatformView({ models, platforms }) {
               )}
             </div>
 
-            {/* 平台折扣 */}
             <div className="px-4 pt-3 border-t border-dx-gray-100">
               <DiscountPanel platformId={selectedPlatform} />
             </div>
@@ -215,7 +247,7 @@ export default function PlatformView({ models, platforms }) {
         <div className="card p-12 text-center text-dx-gray-400">
           <div className="text-4xl mb-3">👆</div>
           <p className="text-sm">选择上方平台查看该平台所有模型报价</p>
-          <p className="text-xs mt-1">每个平台卡片下方显示该平台最低/最高输入价范围</p>
+          <p className="text-xs mt-1">向左滚动可查看更多平台</p>
         </div>
       )}
     </div>
