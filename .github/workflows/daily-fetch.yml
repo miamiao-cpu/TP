@@ -1,0 +1,20 @@
+# TP 价格采集 + 部署到 GitHub Pages
+# 触发方式：1) 用户在 Agent 里说"更新价格"（指令驱动，主方式）
+#         2) 每周一 UTC 00:00 兜底自动更新（保底）
+#         3) GitHub Actions 页面手动 Run workflow
+# 数据架构:
+#   L1 - OpenRouter API（自动）: 海外模型代理价
+#   L2 - 国内平台价格（手动维护）: 见 src/data/models.js
+#   L3 - 折扣信息（手动维护）: 见 src/data/discounts.js
+name: Price Fetch & Deploy
+
+on:
+  schedule:
+    - cron: '0 0 * * 1'     # 每周一 UTC 00:00（北京时间 08:00）兜底更新
+  workflow_dispatch:         # 手动触发（Agent 指令或 GitHub 页面点 Run）
+  push:
+    branches: [main]         # 推送到 main 时也构建部署
+
+permissions:
+  contents: write            # 推送 prices.json
+  pages: write               # 部署 Pages
