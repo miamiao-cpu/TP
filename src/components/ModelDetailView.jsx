@@ -1,10 +1,10 @@
 import { useState, useMemo } from 'react'
 import { useCurrency, CURRENCY } from './CurrencyContext'
-import { PLATFORMS, MODEL_TAGS, MODALITIES } from '../data/constants'
+import { PLATFORMS, MODEL_TAGS, MODALITIES, COUNTRIES } from '../data/constants'
 import { formatPrice, formatContextLength, convertPrice, getPricingUnitShort } from '../utils/priceUtils'
 import { getModelPricesByRegion } from '../data/index'
 import DiscountPanel from './DiscountPanel'
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, LineChart, Line } from 'recharts'
 
 export default function ModelDetailView({ models }) {
   const { currency } = useCurrency()
@@ -70,25 +70,56 @@ export default function ModelDetailView({ models }) {
 }
 
 function ModelDetailPage({ model, currency }) {
-  const { domestic, overseas } = getModelPricesByRegion(model)
+  const byCountry = getModelPricesByRegion(model)
   const pricingUnitShort = getPricingUnitShort(model.pricingUnit, currency === CURRENCY.USD ? 'usd' : 'cny')
   const modInfo = MODALITIES[model.modality]
+  const countryInfo = COUNTRIES[model.country]
+  const countryEntries = Object.entries(byCountry)
 
-  // 为价格对比图准备数据
+  // 各平台输出价对比（仅输出价）
   const chartData = useMemo(() => {
     const data = []
     for (const [platformId, price] of Object.entries(model.prices)) {
       const platform = PLATFORMS.find(p => p.id === platformId)
+      if (price.output === null) continue
       data.push({
         platform: platform?.nameCn || platformId,
-        input: convertPrice(price.input, currency),
         output: convertPrice(price.output, currency),
-        cache: price.cache !== null ? convertPrice(price.cache, currency) : undefined,
-        batch: price.batch !== null ? convertPrice(price.batch, currency) : undefined,
         fill: platform?.color || '#999',
       })
     }
-    return data.sort((a, b) => a.input - b.input)
+    return data.sort((a, b) => a.output - b.output)
+  }, [model, currency])
+
+  // 24个月价格变化曲线（模拟数据 — 基于当前价格生成趋势）
+  // 在真实场景中，应从 price-history/YYYY-MM-DD.json 快照中读取历史数据
+  const priceHistory = useMemo(() => {
+    const now = new Date(2026, 7, 6) // 2026-08-06
+    const historyData = []
+    // 按平台生成模拟历史
+    for (const [platformId, price] of Object.entries(model.prices)) {
+      if (price.output === null) continue
+      const platform = PLATFORMS.find(p => p.id === platformId)
+      const baseOutput = price.output
+      const points = []
+      // 模拟24个月价格波动（±15%随机振荡），越近越接近当前价格
+      for (let i = 23; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+        const monthLabel = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+        // 模拟缓慢下降 + 振荡
+        const drift = i * 0.003 // 越早越便宜的微妙趋势
+        const noise = (Math.random() - 0.5) * 0.25
+        const val = baseOutput * (1 - drift + noise)
+        points.push({ month: monthLabel, output: convertPrice(Math.max(val, 0), currency) })
+      }
+      historyData.push({
+        platformId,
+        platformName: platform?.nameCn || platformId,
+        color: platform?.color || '#999',
+        points,
+      })
+    }
+    return historyData
   }, [model, currency])
 
   return (
@@ -101,6 +132,7 @@ function ModelDetailPage({ model, currency }) {
             <p className="text-sm text-dx-gray-500 mt-1">{model.provider}</p>
           </div>
           <div className="flex gap-2 flex-wrap">
+            {countryInfo && <span className="badge-blue badge">{countryInfo.flag} {countryInfo.label}</span>}
             <ModelTag tag={model.tag} />
             {modInfo && <span className="badge-blue badge">{modInfo.icon} {modInfo.label}</span>}
           </div>
@@ -119,12 +151,6 @@ function ModelDetailPage({ model, currency }) {
             <p className="font-mono font-bold text-dx-gray-900 mt-0.5">{Object.keys(model.prices).length} 家</p>
           </div>
           <div>
-            <span className="text-dx-gray-400">最低输入价</span>
-            <p className="font-mono font-bold text-dx-red mt-0.5">
-              {formatPrice(Math.min(...chartData.map(d => d.input)), currency)}
-            </p>
-          </div>
-          <div>
             <span className="text-dx-gray-400">最低输出价</span>
             <p className="font-mono font-bold text-dx-red mt-0.5">
               {formatPrice(Math.min(...chartData.map(d => d.output)), currency)}
@@ -133,9 +159,9 @@ function ModelDetailPage({ model, currency }) {
         </div>
       </div>
 
-      {/* 各平台价格对比柱状图 */}
+      {/* 各平台输出价对比柱状图（仅输出价） */}
       <div className="card p-5">
-        <h3 className="text-sm font-semibold text-dx-gray-700 mb-4">各平台价格对比</h3>
+        <h3 className="text-sm font-semibold text-dx-gray-700 mb-4">各平台输出价对比</h3>
         {chartData.length > 0 ? (
           <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">
@@ -148,10 +174,7 @@ function ModelDetailPage({ model, currency }) {
                   formatter={(value) => formatPrice(value, currency)}
                 />
                 <Legend wrapperStyle={{ fontSize: '12px' }} />
-                <Bar dataKey="input" fill="#E60012" name="输入价" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="output" fill="#1F2937" name="输出价" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="cache" fill="#10B981" name="缓存价" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="batch" fill="#6366F1" name="Batch价" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="output" fill="#E60012" name="输出价" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -160,7 +183,51 @@ function ModelDetailPage({ model, currency }) {
         )}
       </div>
 
-      {/* 平台价格明细表 */}
+      {/* 24个月价格变化曲线 */}
+      <div className="card p-5">
+        <h3 className="text-sm font-semibold text-dx-gray-700 mb-4">24个月价格变化趋势</h3>
+        {priceHistory.length > 0 ? (
+          <div className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <XAxis
+                  dataKey="month"
+                  tick={{ fontSize: 10 }}
+                  type="category"
+                  allowDuplicatedCategory={false}
+                />
+                <YAxis tick={{ fontSize: 12 }} />
+                <Tooltip
+                  contentStyle={{ borderRadius: '8px', border: '1px solid #e5e7eb', fontSize: '12px' }}
+                  formatter={(value) => formatPrice(value, currency)}
+                />
+                <Legend wrapperStyle={{ fontSize: '12px' }} />
+                {priceHistory.map((s) => (
+                  <Line
+                    key={s.platformId}
+                    data={s.points}
+                    type="monotone"
+                    dataKey="output"
+                    name={s.platformName}
+                    stroke={s.color}
+                    strokeWidth={2}
+                    dot={false}
+                    activeDot={{ r: 4 }}
+                  />
+                ))}
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        ) : (
+          <p className="text-sm text-dx-gray-400 py-8 text-center">暂无历史价格数据</p>
+        )}
+        <p className="text-xs text-dx-gray-400 mt-2 text-center">
+          * 历史数据基于当前价格模拟生成，真实数据将在 daily-fetch 积累后自动填充
+        </p>
+      </div>
+
+      {/* 平台价格明细表（仅输出价为主） */}
       <div className="card p-0 overflow-hidden">
         <div className="px-4 py-3 bg-dx-gray-100 text-sm font-semibold text-dx-gray-700 flex items-center gap-2">
           <span>各平台报价明细</span>
@@ -171,9 +238,9 @@ function ModelDetailPage({ model, currency }) {
             <thead>
               <tr className="border-b border-dx-gray-100 bg-dx-gray-50">
                 <th className="text-left px-4 py-2 text-dx-gray-500 font-medium">平台</th>
-                <th className="text-left px-4 py-2 text-dx-gray-500 font-medium">区域</th>
-                <th className="text-right px-4 py-2 text-dx-gray-500 font-medium">输入价</th>
+                <th className="text-left px-4 py-2 text-dx-gray-500 font-medium">国家</th>
                 <th className="text-right px-4 py-2 text-dx-gray-500 font-medium">输出价</th>
+                <th className="text-right px-4 py-2 text-dx-gray-500 font-medium">输入价</th>
                 <th className="text-right px-4 py-2 text-dx-gray-500 font-medium">缓存价</th>
                 <th className="text-right px-4 py-2 text-dx-gray-500 font-medium">Batch价</th>
                 <th className="text-center px-4 py-2 text-dx-gray-500 font-medium">来源</th>
@@ -183,6 +250,7 @@ function ModelDetailPage({ model, currency }) {
             <tbody>
               {Object.entries(model.prices).map(([platformId, price]) => {
                 const platform = PLATFORMS.find(p => p.id === platformId)
+                const country = platform ? COUNTRIES[platform.country] : null
                 return (
                   <tr key={platformId} className="border-b border-dx-gray-50 hover:bg-dx-gray-50">
                     <td className="px-4 py-2.5">
@@ -192,15 +260,13 @@ function ModelDetailPage({ model, currency }) {
                       </div>
                     </td>
                     <td className="px-4 py-2.5">
-                      <span className={`badge ${platform?.region === 'china' ? 'badge-red' : 'badge-blue'}`}>
-                        {platform?.region === 'china' ? '国内' : '海外'}
-                      </span>
+                      <span className="text-xs">{country?.flag || '🏳️'} {country?.label || ''}</span>
                     </td>
-                    <td className="px-4 py-2.5 text-right font-mono font-bold text-dx-gray-900">
-                      {formatPrice(convertPrice(price.input, currency), currency)}
-                    </td>
-                    <td className="px-4 py-2.5 text-right font-mono font-bold text-dx-gray-900">
+                    <td className="px-4 py-2.5 text-right font-mono font-bold text-dx-red">
                       {formatPrice(convertPrice(price.output, currency), currency)}
+                    </td>
+                    <td className="px-4 py-2.5 text-right font-mono text-dx-gray-700">
+                      {formatPrice(convertPrice(price.input, currency), currency)}
                     </td>
                     <td className="px-4 py-2.5 text-right font-mono text-dx-gray-500">
                       {price.cache !== null ? formatPrice(convertPrice(price.cache, currency), currency) : '-'}

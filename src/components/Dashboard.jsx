@@ -1,11 +1,12 @@
 import { useState, useMemo } from 'react'
 import { useCurrency, CURRENCY } from './CurrencyContext'
-import { PLATFORMS, MODEL_TAGS, MODALITIES } from '../data/constants'
-import { formatPrice, formatContextLength, convertPrice, getCheapestPrice } from '../utils/priceUtils'
+import { PLATFORMS, MODEL_TAGS, MODALITIES, COUNTRIES, REGIONS, CHANGE_TYPES } from '../data/constants'
+import { getModelsByCountry, getRecentChanges } from '../data/index'
+import { formatPrice, formatContextLength, convertPrice, getCheapestOutput, getCheapestPrice } from '../utils/priceUtils'
 
 export default function Dashboard({ models, platforms }) {
   const { currency } = useCurrency()
-  const [sortField, setSortField] = useState('input')
+  const [sortField, setSortField] = useState('output')
   const [sortDir, setSortDir] = useState('asc')
 
   // ========== 统计数据 ==========
@@ -25,25 +26,18 @@ export default function Dashboard({ models, platforms }) {
     return counts
   }, [models])
 
-  // 国内外模型分布
+  // 按国家分布
+  const countryGroups = useMemo(() => getModelsByCountry(), [models])
+
+  // 按区域分布
   const regionCounts = useMemo(() => {
-    let domestic = 0
-    let overseas = 0
-    for (const m of models) {
-      const prices = Object.entries(m.prices)
-      const hasChina = prices.some(([pid]) => {
-        const p = PLATFORMS.find(x => x.id === pid)
-        return p?.region === 'china'
-      })
-      const hasOverseas = prices.some(([pid]) => {
-        const p = PLATFORMS.find(x => x.id === pid)
-        return p?.region === 'overseas'
-      })
-      if (hasChina) domestic++
-      if (hasOverseas) overseas++
+    const counts = {}
+    for (const g of countryGroups) {
+      const region = COUNTRIES[g.id]?.region || 'na'
+      counts[region] = (counts[region] || 0) + g.models.length
     }
-    return { domestic, overseas }
-  }, [models])
+    return counts
+  }, [countryGroups])
 
   // 按tag统计
   const tagCounts = useMemo(() => {
@@ -55,37 +49,27 @@ export default function Dashboard({ models, platforms }) {
     return counts
   }, [models])
 
-  // 最便宜的文本模型
+  // 最便宜的文本模型（以输出价为主）
   const cheapestTextModel = useMemo(() => {
     return models
       .filter((m) => {
-        const prices = Object.values(m.prices)
-        const avg = prices.reduce((s, p) => s + (p.input + p.output) / 2, 0) / prices.length
-        return avg > 0 && m.pricingUnit === 'per_million_tokens'
+        const out = getCheapestOutput(m).output
+        return out > 0 && m.pricingUnit === 'per_million_tokens'
       })
-      .sort((a, b) => {
-        const aAvg = Object.values(a.prices).reduce((s, p) => s + (p.input + p.output) / 2, 0) / Object.values(a.prices).length
-        const bAvg = Object.values(b.prices).reduce((s, p) => s + (p.input + p.output) / 2, 0) / Object.values(b.prices).length
-        return aAvg - bAvg
-      })[0]
+      .sort((a, b) => getCheapestOutput(a).output - getCheapestOutput(b).output)[0]
   }, [models])
 
-  // 最贵的文本模型
+  // 最贵的文本模型（输出价）
   const mostExpensiveModel = useMemo(() => {
     return models
       .filter((m) => {
-        const prices = Object.values(m.prices)
-        const avg = prices.reduce((s, p) => s + (p.input + p.output) / 2, 0) / prices.length
-        return avg > 0 && m.pricingUnit === 'per_million_tokens'
+        const out = getCheapestOutput(m).output
+        return out > 0 && m.pricingUnit === 'per_million_tokens'
       })
-      .sort((a, b) => {
-        const aAvg = Object.values(a.prices).reduce((s, p) => s + (p.input + p.output) / 2, 0) / Object.values(a.prices).length
-        const bAvg = Object.values(b.prices).reduce((s, p) => s + (p.input + p.output) / 2, 0) / Object.values(b.prices).length
-        return bAvg - aAvg
-      })[0]
+      .sort((a, b) => getCheapestOutput(b).output - getCheapestOutput(a).output)[0]
   }, [models])
 
-  // 价格区间分布（文本模型输入价）
+  // 价格区间分布（文本模型输出价）
   const priceDistribution = useMemo(() => {
     const ranges = [
       { label: '免费', min: 0, max: 0, count: 0, color: 'bg-green-500' },
@@ -98,28 +82,26 @@ export default function Dashboard({ models, platforms }) {
     ]
     for (const m of models) {
       if (m.pricingUnit !== 'per_million_tokens') continue
-      const cheapest = getCheapestPrice(m)
-      if (cheapest.input === 0) { ranges[0].count++; continue }
+      const cheapest = getCheapestOutput(m)
+      if (cheapest.output === 0) { ranges[0].count++; continue }
       for (const r of ranges.slice(1)) {
-        if (cheapest.input >= r.min && cheapest.input < r.max) { r.count++; break }
+        if (cheapest.output >= r.min && cheapest.output < r.max) { r.count++; break }
       }
     }
     const maxCount = Math.max(...ranges.map(r => r.count), 1)
     return ranges.map(r => ({ ...r, pct: Math.round(r.count / maxCount * 100) }))
   }, [models])
 
-  // 排序后的模型列表
+  // 排序后的模型列表（默认按输出价）
   const sortedModels = useMemo(() => {
     return [...models].sort((a, b) => {
-      const aCheap = getCheapestPrice(a)
-      const bCheap = getCheapestPrice(b)
       let aVal, bVal
       if (sortField === 'input') {
-        aVal = convertPrice(aCheap.input, currency)
-        bVal = convertPrice(bCheap.input, currency)
+        aVal = convertPrice(getCheapestPrice(a).input, currency)
+        bVal = convertPrice(getCheapestPrice(b).input, currency)
       } else if (sortField === 'output') {
-        aVal = convertPrice(aCheap.output, currency)
-        bVal = convertPrice(bCheap.output, currency)
+        aVal = convertPrice(getCheapestOutput(a).output, currency)
+        bVal = convertPrice(getCheapestOutput(b).output, currency)
       } else {
         aVal = a.contextLength || 0
         bVal = b.contextLength || 0
@@ -137,22 +119,8 @@ export default function Dashboard({ models, platforms }) {
     }
   }
 
-  // 最近价格变动（基于模型数据）
-  const recentChanges = useMemo(() => {
-    const changes = []
-    for (const m of models) {
-      const prices = Object.values(m.prices)
-      if (prices.length === 0) continue
-      const latestDate = prices.reduce((max, p) => {
-        if (!p.updated) return max
-        return (!max || p.updated > max) ? p.updated : max
-      }, null)
-      if (latestDate) {
-        changes.push({ model: m.name, date: latestDate, tag: m.tag })
-      }
-    }
-    return changes.sort((a, b) => b.date.localeCompare(a.date)).slice(0, 8)
-  }, [models])
+  // 最近价格变动（含变化类型 logo）
+  const recentChanges = useMemo(() => getRecentChanges(8), [models])
 
   // 平台模型覆盖排行
   const platformRanking = useMemo(() => {
@@ -165,7 +133,7 @@ export default function Dashboard({ models, platforms }) {
     return Object.entries(counts)
       .map(([pid, count]) => {
         const p = PLATFORMS.find(x => x.id === pid)
-        return { id: pid, name: p?.nameCn || pid, color: p?.color || '#999', region: p?.region, count }
+        return { id: pid, name: p?.nameCn || pid, color: p?.color || '#999', country: p?.country, count }
       })
       .sort((a, b) => b.count - a.count)
   }, [models])
@@ -174,37 +142,43 @@ export default function Dashboard({ models, platforms }) {
     <div className="space-y-6">
       {/* 顶部统计卡片 */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard label="覆盖模型" value={totalModels} suffix="个" color="red" />
+        <StatCard label="收录模型" value={totalModels} suffix="个" color="red" />
         <StatCard label="覆盖平台" value={totalPlatforms} suffix="家" color="blue" />
         <StatCard label="免费模型" value={freeModels} suffix="个" color="green" />
         <StatCard
-          label="最低输入价"
-          value={cheapestTextModel ? formatPrice(convertPrice(getCheapestPrice(cheapestTextModel).input, currency), currency) : '-'}
+          label="最低输出价"
+          value={cheapestTextModel ? formatPrice(convertPrice(getCheapestOutput(cheapestTextModel).output, currency), currency) : '-'}
           suffix={cheapestTextModel ? `/百万Tok` : ''}
           sub={cheapestTextModel?.name || ''}
           color="orange"
         />
       </div>
 
-      {/* 第二行统计：国内/海外 + 模态分布 */}
+      {/* 第二行统计：国家/区域 + 模态分布 */}
       <div className="grid lg:grid-cols-3 gap-4">
-        {/* 国内外模型分布 */}
+        {/* 国家分布 */}
         <div className="card p-4">
-          <h3 className="text-sm font-semibold text-dx-gray-700 mb-3">地域分布</h3>
+          <h3 className="text-sm font-semibold text-dx-gray-700 mb-3">国家 / 区域分布</h3>
           <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="w-3 h-3 rounded-full bg-dx-red"></span>
-                <span className="text-sm text-dx-gray-600">国内平台</span>
+            {Object.entries(REGIONS).map(([rid, r]) => (
+              <div key={rid} className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className={`w-3 h-3 rounded-full ${REGION_COLOR[r.color] || 'bg-gray-500'}`}></span>
+                  <span className="text-sm text-dx-gray-600">{r.label}</span>
+                  <span className="text-xs text-dx-gray-400">({regionCounts[rid] || 0})</span>
+                </div>
               </div>
-              <span className="font-bold text-dx-gray-900 font-mono">{regionCounts.domestic}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="w-3 h-3 rounded-full bg-blue-500"></span>
-                <span className="text-sm text-dx-gray-600">海外平台</span>
-              </div>
-              <span className="font-bold text-dx-gray-900 font-mono">{regionCounts.overseas}</span>
+            ))}
+            <div className="border-t border-dx-gray-100 pt-2 space-y-1.5">
+              {countryGroups.map((g) => (
+                <div key={g.id} className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <span>{g.flag}</span>
+                    <span className="text-xs text-dx-gray-500">{g.label}</span>
+                  </div>
+                  <span className="text-xs font-mono text-dx-gray-600 font-bold">{g.models.length}</span>
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -248,9 +222,9 @@ export default function Dashboard({ models, platforms }) {
         </div>
       </div>
 
-      {/* 价格区间分布 */}
+      {/* 价格区间分布（输出价为主） */}
       <div className="card p-4">
-        <h3 className="text-sm font-semibold text-dx-gray-700 mb-3">输入价格区间分布（¥/百万Token，最低平台价）</h3>
+        <h3 className="text-sm font-semibold text-dx-gray-700 mb-3">输出价格区间分布（¥/百万Token，最低平台输出价）</h3>
         <div className="space-y-2">
           {priceDistribution.map((r, i) => (
             <div key={i} className="flex items-center gap-3">
@@ -271,7 +245,7 @@ export default function Dashboard({ models, platforms }) {
         {/* 模型价格速览表 */}
         <div className="card p-0 overflow-hidden">
           <div className="px-4 py-3 bg-dx-red text-white font-semibold text-sm flex items-center justify-between">
-            <span>模型价格速览</span>
+            <span>TOP50 模型价格速览</span>
             <span className="text-xs font-normal opacity-75">{models.length} 个模型</span>
           </div>
           <div className="overflow-x-auto max-h-[500px] overflow-y-auto">
@@ -294,7 +268,8 @@ export default function Dashboard({ models, platforms }) {
               </thead>
               <tbody>
                 {sortedModels.map((model) => {
-                  const cheapest = getCheapestPrice(model)
+                  const cheapestIn = getCheapestPrice(model)
+                  const cheapestOut = getCheapestOutput(model)
                   const modInfo = MODALITIES[model.modality]
                   return (
                     <tr key={model.id} className="border-b border-dx-gray-50 hover:bg-dx-gray-50 transition-colors">
@@ -309,11 +284,11 @@ export default function Dashboard({ models, platforms }) {
                         <span className="text-xs" title={model.modality}>{modInfo?.icon || '📝'}</span>
                       </td>
                       <td className="px-4 py-2.5 text-right font-mono text-dx-gray-700">
-                        {formatPrice(convertPrice(cheapest.input, currency), currency)}
-                        <SourceHint source={cheapest.source} />
+                        {formatPrice(convertPrice(cheapestIn.input, currency), currency)}
+                        <SourceHint source={cheapestIn.source} />
                       </td>
-                      <td className="px-4 py-2.5 text-right font-mono text-dx-gray-700">
-                        {formatPrice(convertPrice(cheapest.output, currency), currency)}
+                      <td className="px-4 py-2.5 text-right font-mono text-dx-gray-700 font-semibold">
+                        {formatPrice(convertPrice(cheapestOut.output, currency), currency)}
                       </td>
                       <td className="px-4 py-2.5 text-right text-dx-gray-500 font-mono">
                         {formatContextLength(model.contextLength)}
@@ -330,38 +305,46 @@ export default function Dashboard({ models, platforms }) {
           {/* 平台覆盖排行 */}
           <div className="card p-0 overflow-hidden">
             <div className="px-4 py-3 bg-dx-gray-800 text-white font-semibold text-sm">
-              平台模型覆盖排行
+              TOP50 平台模型覆盖排行
             </div>
             <div className="p-4 space-y-2">
-              {platformRanking.slice(0, 10).map((p, i) => (
-                <div key={p.id} className="flex items-center gap-3">
-                  <span className="text-xs text-dx-gray-400 w-4 text-right font-mono">{i + 1}</span>
-                  <span className="w-2.5 h-2.5 rounded-full" style={{ background: p.color }}></span>
-                  <span className="text-sm font-medium text-dx-gray-900 flex-1">{p.name}</span>
-                  <span className={`badge ${p.region === 'china' ? 'badge-red' : 'badge-blue'}`}>
-                    {p.region === 'china' ? '国内' : '海外'}
-                  </span>
-                  <span className="text-sm font-mono font-bold text-dx-gray-900 w-8 text-right">{p.count}</span>
-                </div>
-              ))}
+              {platformRanking.slice(0, 10).map((p, i) => {
+                const c = COUNTRIES[p.country]
+                return (
+                  <div key={p.id} className="flex items-center gap-3">
+                    <span className="text-xs text-dx-gray-400 w-4 text-right font-mono">{i + 1}</span>
+                    <span className="w-2.5 h-2.5 rounded-full" style={{ background: p.color }}></span>
+                    <span className="text-sm font-medium text-dx-gray-900 flex-1">{p.name}</span>
+                    <span className="text-xs" title={c?.label}>{c?.flag || '🏳️'}</span>
+                    <span className="text-sm font-mono font-bold text-dx-gray-900 w-8 text-right">{p.count}</span>
+                  </div>
+                )
+              })}
             </div>
           </div>
 
-          {/* 最近数据更新 */}
+          {/* 最近数据更新（含变化 logo） */}
           <div className="card p-0 overflow-hidden">
             <div className="px-4 py-3 bg-dx-gray-100 text-sm font-semibold text-dx-gray-700">
               最近数据更新
             </div>
             <div className="divide-y divide-dx-gray-50">
-              {recentChanges.map((item, i) => (
-                <div key={i} className="px-4 py-2.5 flex items-center justify-between hover:bg-dx-gray-50 transition-colors">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-dx-gray-900">{item.model}</span>
-                    {item.tag && <ModelTag tag={item.tag} />}
+              {recentChanges.map((item, i) => {
+                const ch = CHANGE_TYPES[item.changeType] || CHANGE_TYPES.down
+                return (
+                  <div key={i} className="px-4 py-2.5 flex items-center justify-between hover:bg-dx-gray-50 transition-colors">
+                    <div className="flex items-center gap-2">
+                      <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded ${ch.bg} ${ch.color} text-xs font-medium`}>
+                        <span>{ch.icon}</span>
+                        <span>{ch.label}</span>
+                      </span>
+                      <span className="text-sm font-medium text-dx-gray-900">{item.model}</span>
+                      {item.tag && <ModelTag tag={item.tag} />}
+                    </div>
+                    <span className="text-xs text-dx-gray-400 font-mono">{item.date}</span>
                   </div>
-                  <span className="text-xs text-dx-gray-400 font-mono">{item.date}</span>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </div>
         </div>
@@ -371,6 +354,8 @@ export default function Dashboard({ models, platforms }) {
 }
 
 // ========== 子组件 ==========
+
+const REGION_COLOR = { na: 'bg-indigo-500', eu: 'bg-blue-500', apac: 'bg-dx-red' }
 
 function StatCard({ label, value, suffix, sub, color }) {
   const borderColor = {

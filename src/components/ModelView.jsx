@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import { useCurrency, CURRENCY } from './CurrencyContext'
-import { PLATFORMS, MODEL_TAGS, MODALITIES, PRICING_UNITS } from '../data/constants'
-import { formatPrice, formatContextLength, convertPrice, getPricingUnitShort } from '../utils/priceUtils'
+import { PLATFORMS, MODEL_TAGS, MODALITIES, COUNTRIES, PRICING_UNITS } from '../data/constants'
+import { formatPrice, formatContextLength, convertPrice, getPricingUnitShort, getCheapestOutput, getCheapestPrice } from '../utils/priceUtils'
 import { getModelPricesByRegion } from '../data/index'
 import DiscountPanel from './DiscountPanel'
 import PLATFORM_DISCOUNTS from '../data/discounts'
@@ -11,17 +11,38 @@ export default function ModelView({ models }) {
   const [search, setSearch] = useState('')
   const [tagFilter, setTagFilter] = useState('all')
   const [modalityFilter, setModalityFilter] = useState('all')
+  const [listSort, setListSort] = useState('price-asc') // price-asc | price-desc | new | old
   const [selectedModel, setSelectedModel] = useState(null)
 
-  // 筛选模型
+  // 模型最新更新日期
+  function latestUpdated(model) {
+    const dates = Object.values(model.prices || {}).map(p => p.updated).filter(Boolean)
+    return dates.length ? dates.reduce((a, b) => a > b ? a : b) : '0000-00-00'
+  }
+
+  // 筛选 + 排序模型
   const filteredModels = useMemo(() => {
-    return models.filter((m) => {
+    const filtered = models.filter((m) => {
       const matchSearch = !search || m.name.toLowerCase().includes(search.toLowerCase()) || m.provider.toLowerCase().includes(search.toLowerCase())
       const matchTag = tagFilter === 'all' || m.tag === tagFilter
       const matchModality = modalityFilter === 'all' || m.modality === modalityFilter
       return matchSearch && matchTag && matchModality
     })
-  }, [models, search, tagFilter, modalityFilter])
+    return [...filtered].sort((a, b) => {
+      if (listSort === 'new') return latestUpdated(b).localeCompare(latestUpdated(a))
+      if (listSort === 'old') return latestUpdated(a).localeCompare(latestUpdated(b))
+      const aOut = convertPrice(getCheapestOutput(a).output, currency) || Infinity
+      const bOut = convertPrice(getCheapestOutput(b).output, currency) || Infinity
+      return listSort === 'price-desc' ? bOut - aOut : aOut - bOut
+    })
+  }, [models, search, tagFilter, modalityFilter, listSort, currency])
+
+  const sortButtons = [
+    { value: 'price-asc', label: '价格↑' },
+    { value: 'price-desc', label: '价格↓' },
+    { value: 'new', label: '最新' },
+    { value: 'old', label: '最旧' },
+  ]
 
   return (
     <div className="space-y-4">
@@ -82,6 +103,25 @@ export default function ModelView({ models }) {
             ))}
           </div>
         </div>
+        {/* 列表排序 */}
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-dx-gray-400 font-medium">排序:</span>
+          <div className="flex gap-1.5 flex-wrap">
+            {sortButtons.map((opt) => (
+              <button
+                key={opt.value}
+                onClick={() => setListSort(opt.value)}
+                className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${
+                  listSort === opt.value
+                    ? 'bg-dx-red text-white'
+                    : 'bg-dx-gray-50 text-dx-gray-500 hover:bg-dx-gray-100'
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* 模型列表 + 详情 */}
@@ -93,30 +133,39 @@ export default function ModelView({ models }) {
             <span className="text-xs font-normal opacity-75">{filteredModels.length} 个</span>
           </div>
           <div className="max-h-[600px] overflow-y-auto divide-y divide-dx-gray-100">
-            {filteredModels.map((model) => (
-              <button
-                key={model.id}
-                onClick={() => setSelectedModel(model)}
-                className={`w-full px-4 py-3 text-left hover:bg-dx-gray-50 transition-colors ${
-                  selectedModel?.id === model.id ? 'bg-dx-red/5 border-l-2 border-dx-red' : ''
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5">
-                      <span className="font-medium text-sm text-dx-gray-900 truncate">{model.name}</span>
-                      <span className="text-xs" title={model.modality}>{MODALITIES[model.modality]?.icon || ''}</span>
+            {filteredModels.map((model) => {
+              const cheapestOut = getCheapestOutput(model)
+              const country = COUNTRIES[model.country]
+              return (
+                <button
+                  key={model.id}
+                  onClick={() => setSelectedModel(model)}
+                  className={`w-full px-4 py-3 text-left hover:bg-dx-gray-50 transition-colors ${
+                    selectedModel?.id === model.id ? 'bg-dx-red/5 border-l-2 border-dx-red' : ''
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-medium text-sm text-dx-gray-900 truncate">{model.name}</span>
+                        <span className="text-xs" title={model.modality}>{MODALITIES[model.modality]?.icon || ''}</span>
+                        <span title={country?.label}>{country?.flag || ''}</span>
+                      </div>
+                      <div className="text-xs text-dx-gray-400 mt-0.5 flex items-center gap-2">
+                        <span>{model.provider}</span>
+                        <span className="text-dx-gray-300">|</span>
+                        <span className="font-mono font-medium text-dx-gray-600">
+                          {formatPrice(convertPrice(cheapestOut.output, currency), currency)}
+                        </span>
+                        <span className="text-dx-gray-300">|</span>
+                        <span>{getPricingUnitShort(model.pricingUnit, currency === CURRENCY.USD ? 'usd' : 'cny')}</span>
+                      </div>
                     </div>
-                    <div className="text-xs text-dx-gray-400 mt-0.5 flex items-center gap-2">
-                      <span>{model.provider}</span>
-                      <span className="text-dx-gray-300">|</span>
-                      <span>{getPricingUnitShort(model.pricingUnit, currency === CURRENCY.USD ? 'usd' : 'cny')}</span>
-                    </div>
+                    <ModelTag tag={model.tag} />
                   </div>
-                  <ModelTag tag={model.tag} />
-                </div>
-              </button>
-            ))}
+                </button>
+              )
+            })}
             {filteredModels.length === 0 && (
               <div className="px-4 py-8 text-center text-dx-gray-400 text-sm">
                 未找到匹配的模型
@@ -142,10 +191,10 @@ export default function ModelView({ models }) {
 }
 
 function ModelDetail({ model, currency }) {
-  const { domestic, overseas } = getModelPricesByRegion(model)
+  const byCountry = getModelPricesByRegion(model)
   const pricingUnitShort = getPricingUnitShort(model.pricingUnit, currency === CURRENCY.USD ? 'usd' : 'cny')
-  const hasDomestic = Object.keys(domestic).length > 0
-  const hasOverseas = Object.keys(overseas).length > 0
+  const countryInfo = COUNTRIES[model.country]
+  const countryEntries = Object.entries(byCountry)
 
   return (
     <div className="space-y-4">
@@ -157,6 +206,7 @@ function ModelDetail({ model, currency }) {
             <p className="text-sm text-dx-gray-500 mt-1">{model.provider}</p>
           </div>
           <div className="flex gap-2">
+            {countryInfo && <span className="badge-blue badge">{countryInfo.flag} {countryInfo.label}</span>}
             <ModelTag tag={model.tag} />
             <ModalityBadge modality={model.modality} />
           </div>
@@ -168,27 +218,19 @@ function ModelDetail({ model, currency }) {
         </div>
       </div>
 
-      {/* 海外平台价格 */}
-      {hasOverseas && (
-        <div className="card p-0 overflow-hidden">
-          <div className="px-4 py-3 bg-blue-50 text-sm font-semibold text-blue-800 flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-blue-500"></span>
-            海外平台报价
+      {/* 按国家分组展示各平台价格 */}
+      {countryEntries.map(([country, prices]) => {
+        const ci = COUNTRIES[country]
+        return (
+          <div key={country} className="card p-0 overflow-hidden">
+            <div className={`px-4 py-3 text-sm font-semibold flex items-center gap-2 ${ci && country === 'CN' ? 'bg-dx-red-50 text-dx-red' : 'bg-blue-50 text-blue-800'}`}>
+              <span className="w-2.5 h-2.5 rounded-full bg-blue-500"></span>
+              {ci?.flag} {ci?.label || country} 平台报价
+            </div>
+            <PriceTable prices={prices} currency={currency} pricingUnit={model.pricingUnit} />
           </div>
-          <PriceTable prices={overseas} currency={currency} pricingUnit={model.pricingUnit} />
-        </div>
-      )}
-
-      {/* 国内平台价格 */}
-      {hasDomestic && (
-        <div className="card p-0 overflow-hidden">
-          <div className="px-4 py-3 bg-dx-red-50 text-sm font-semibold text-dx-red flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-dx-red"></span>
-            国内平台报价
-          </div>
-          <PriceTable prices={domestic} currency={currency} pricingUnit={model.pricingUnit} />
-        </div>
-      )}
+        )
+      })}
 
       {/* 各平台折扣信息 */}
       <div className="card p-4">

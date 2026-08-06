@@ -156,6 +156,24 @@ export function getCheapestPrice(model) {
 }
 
 /**
+ * 获取模型最便宜的输出价（v3 默认以输出价为主要依据）
+ */
+export function getCheapestOutput(model) {
+  const entries = Object.entries(model.prices || {})
+  if (!entries.length) return { output: 0, platformId: null }
+  let cheapest = null
+  let minOutput = Infinity
+  for (const [pid, price] of entries) {
+    const out = price.output
+    if (out !== null && out !== undefined && out < minOutput) {
+      minOutput = out
+      cheapest = { ...price, platformId: pid }
+    }
+  }
+  return cheapest || { output: 0, platformId: null }
+}
+
+/**
  * 通用价格转换（人民币 → 目标货币）
  */
 export function convertPrice(cny, currency = 'cny') {

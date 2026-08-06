@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useCurrency, CURRENCY } from './CurrencyContext'
-import { PLATFORMS, MODEL_TAGS, MODALITIES } from '../data/constants'
+import { PLATFORMS, MODEL_TAGS, MODALITIES, COUNTRIES } from '../data/constants'
 import { formatPrice, formatContextLength, convertPrice, getPricingUnitShort } from '../utils/priceUtils'
 import DiscountPanel from './DiscountPanel'
 
@@ -96,9 +96,7 @@ export default function PlatformView({ models, platforms }) {
                 </div>
               )}
               <div className="mt-2 flex gap-1">
-                <span className={`badge ${platform.region === 'china' ? 'badge-red' : 'badge-blue'}`}>
-                  {platform.region === 'china' ? '国内' : '海外'}
-                </span>
+                <span className="badge-blue badge">{COUNTRIES[platform.country]?.flag || '🏳️'} {COUNTRIES[platform.country]?.label || platform.country}</span>
                 <span className="badge-gray badge">
                   {platform.type === 'official' ? '官方' : '代理'}
                 </span>

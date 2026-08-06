@@ -18,11 +18,11 @@ function App() {
   }, [])
 
   const tabs = [
-    { id: 'dashboard', label: '总览', icon: '📊' },
-    { id: 'model', label: '按模型查询', icon: '🔍' },
-    { id: 'platform', label: '按平台查询', icon: '🏢' },
-    { id: 'compare', label: '价格对比', icon: '⚖️' },
-    { id: 'detail', label: '模型详情', icon: '📈' },
+    { id: 'dashboard', label: 'TOP50总览', icon: '📊' },
+    { id: 'model', label: 'TOP50按模型查询', icon: '🔍' },
+    { id: 'platform', label: 'TOP50按平台查询', icon: '🏢' },
+    { id: 'compare', label: 'TOP50价格对比', icon: '⚖️' },
+    { id: 'detail', label: 'TOP50模型详情', icon: '📈' },
   ]
 
   return (

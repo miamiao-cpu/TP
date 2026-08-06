@@ -1,6 +1,6 @@
 /**
- * TP 数据层（v2 - 支持 modality、多计价单位、国内外分列）
- * 
+ * TP 数据层（v3 - 文本/图像/视频三类 + 国家区域）
+ *
  * 数据流:
  *   daily-fetch.mjs → prices.json (L1 自动采集)
  *   models.js       → 手动维护数据 (L2 国内平台 + 海外官方价)
@@ -10,7 +10,7 @@
 import rawPrices from './prices.json'
 import MANUAL_MODELS from './models'
 import DISCOUNTS from './discounts'
-import { PLATFORMS, MODALITIES, PRICING_UNITS, REGIONS } from './constants'
+import { PLATFORMS, COUNTRIES, REGIONS, MODALITIES, CHANGE_TYPES } from './constants'
 
 // ============================================================
 // 平台地域映射（从 PLATFORMS 常量自动获取）
@@ -18,8 +18,13 @@ import { PLATFORMS, MODALITIES, PRICING_UNITS, REGIONS } from './constants'
 
 const PLATFORM_MAP = Object.fromEntries(PLATFORMS.map(p => [p.id, p]))
 
+function getPlatformCountry(platformId) {
+  return PLATFORM_MAP[platformId]?.country || 'US'
+}
+
 function getPlatformRegion(platformId) {
-  return PLATFORM_MAP[platformId]?.region || 'china'
+  const country = getPlatformCountry(platformId)
+  return COUNTRIES[country]?.region || 'na'
 }
 
 // ============================================================
@@ -36,14 +41,14 @@ function buildModels() {
       ...model,
       pricingUnit: model.pricingUnit || 'per_million_tokens',
       modality: model.modality || 'text->text',
+      country: model.country || PLATFORM_MAP[Object.keys(model.prices || {})[0]]?.country || 'US',
       _dataSource: 'manual',
     }
   }
 
-  // 2. 合并 prices.json 自动采集数据（覆盖 openrouter 等自动来源）
+  // 2. 合并 prices.json 自动采集数据（覆盖 auto 来源的平台）
   for (const [modelId, platformPrices] of Object.entries(autoData)) {
     if (modelMap[modelId]) {
-      // 已有手动数据，只覆盖 auto 来源的平台
       const mergedPrices = { ...modelMap[modelId].prices }
       for (const [platformId, priceInfo] of Object.entries(platformPrices)) {
         if (priceInfo.source === 'auto') {
@@ -53,7 +58,7 @@ function buildModels() {
       modelMap[modelId].prices = mergedPrices
       modelMap[modelId]._dataSource = 'hybrid'
     } else {
-      // 纯自动数据（prices.json 中有但 models.js 没有的）
+      const firstPid = Object.keys(platformPrices)[0]
       modelMap[modelId] = {
         id: modelId,
         name: modelId,
@@ -62,6 +67,7 @@ function buildModels() {
         modality: 'text->text',
         pricingUnit: 'per_million_tokens',
         contextLength: guessContextLength(modelId),
+        country: getPlatformCountry(firstPid),
         prices: platformPrices,
         _dataSource: 'auto',
       }
@@ -76,7 +82,7 @@ function buildModels() {
 // ============================================================
 
 function guessProvider(id) {
-  if (id.startsWith('gpt-') || id.startsWith('o4-') || id.startsWith('o3-') || id.startsWith('embedding')) return 'OpenAI'
+  if (id.startsWith('gpt-') || id.startsWith('o4-') || id.startsWith('o3-')) return 'OpenAI'
   if (id.startsWith('claude-')) return 'Anthropic'
   if (id.startsWith('gemini-')) return 'Google'
   if (id.startsWith('deepseek-')) return 'DeepSeek'
@@ -89,6 +95,8 @@ function guessProvider(id) {
   if (id.startsWith('minimax-')) return 'MiniMax'
   if (id.startsWith('step-')) return '阶跃星辰'
   if (id.startsWith('yi-')) return '零一万物'
+  if (id.startsWith('kimi')) return '月之暗面'
+  if (id.startsWith('ernie')) return '百度'
   return 'Unknown'
 }
 
@@ -150,16 +158,48 @@ export function getModalityCounts() {
   return counts
 }
 
-// 获取模型的国内价格和海外价格（分离显示用）
-export function getModelPricesByRegion(model) {
-  const domestic = {}
-  const overseas = {}
-  for (const [platformId, price] of Object.entries(model.prices || {})) {
-    const region = getPlatformRegion(platformId)
-    if (region === 'china') domestic[platformId] = price
-    else overseas[platformId] = price
+// 按国家分组（用于地域分布展示）
+export function getModelsByCountry() {
+  const models = getModels()
+  const groups = {}
+  for (const c of Object.values(COUNTRIES)) {
+    groups[c.id] = { ...c, models: [] }
   }
-  return { domestic, overseas }
+  for (const m of models) {
+    const country = m.country || 'US'
+    if (!groups[country]) {
+      groups[country] = { id: country, label: country, flag: '🏳️', region: 'na', models: [] }
+    }
+    groups[country].models.push(m)
+  }
+  return Object.values(groups).filter(g => g.models.length > 0)
+}
+
+// 按区域分组
+export function getModelsByRegion() {
+  const models = getModels()
+  const groups = {}
+  for (const r of Object.values(REGIONS)) {
+    groups[r.id] = { ...r, models: [] }
+  }
+  for (const m of models) {
+    const country = m.country || 'US'
+    const region = COUNTRIES[country]?.region || 'na'
+    if (!groups[region]) groups[region] = { id: region, label: region, color: 'gray', models: [] }
+    groups[region].models.push(m)
+  }
+  return Object.values(groups).filter(g => g.models.length > 0)
+}
+
+// 按国家/区域拆分模型价格（模型详情页使用）
+export function getModelPricesByRegion(model) {
+  const byCountry = {}
+  for (const [platformId, price] of Object.entries(model.prices || {})) {
+    const country = getPlatformCountry(platformId)
+    if (!byCountry[country]) byCountry[country] = {}
+    byCountry[country][platformId] = price
+  }
+  return byCountry
 }
 
 // 获取折扣信息
@@ -195,15 +235,43 @@ export function getStats() {
   const modalityCounts = getModalityCounts()
   const coveredPlatforms = getCoveredPlatforms()
   const platformCount = coveredPlatforms.length
-  // 最便宜的文本模型输入价
   const textModels = models.filter(m => m.pricingUnit === 'per_million_tokens' && m.modality === 'text->text')
-  const cheapestInput = textModels.length > 0
+  const cheapestOutput = textModels.length > 0
     ? Math.min(...textModels.map(m => {
         const prices = Object.values(m.prices)
-        return Math.min(...prices.map(p => p.input || Infinity))
+        return Math.min(...prices.map(p => p.output || Infinity))
       }))
     : 0
-  return { total, platformCount, modalityCounts, cheapestInput }
+  return { total, platformCount, modalityCounts, cheapestOutput }
+}
+
+// 获取最近价格变化（新进榜/涨价/降价），用于首页 logo 展示
+// 说明：数据仅记录 updated 日期，变化类型由简单规则推断（此处以"更新日期"为维度列出近期变动）
+export function getRecentChanges(limit = 8) {
+  const models = getModels()
+  const changes = []
+  for (const m of models) {
+    const prices = Object.values(m.prices || {})
+    if (prices.length === 0) continue
+    const latestDate = prices.reduce((max, p) => {
+      if (!p.updated) return max
+      return (!max || p.updated > max) ? p.updated : max
+    }, null)
+    if (latestDate) {
+      // 简单规则：更新日期越新视为"新进榜/近期变动"（auto 来源标注为新进，否则按更新展示）
+      const isNew = prices.some(p => p.source === 'auto' && p.updated === latestDate)
+      changes.push({
+        model: m.name,
+        modelId: m.id,
+        country: m.country,
+        modality: m.modality,
+        tag: m.tag,
+        date: latestDate,
+        changeType: isNew ? 'new' : 'down', // 手动录入默认视为价格刷新（绿色），可后续接入真实涨跌
+      })
+    }
+  }
+  return changes.sort((a, b) => b.date.localeCompare(a.date)).slice(0, limit)
 }
 
 export default getModels
