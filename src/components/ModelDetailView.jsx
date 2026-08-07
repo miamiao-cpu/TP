@@ -3,6 +3,7 @@ import { useCurrency, CURRENCY } from './CurrencyContext'
 import { PLATFORMS, MODEL_TAGS, MODALITIES, COUNTRIES } from '../data/constants'
 import { formatPrice, formatContextLength, convertPrice, getPricingUnitShort } from '../utils/priceUtils'
 import { getModelPricesByRegion } from '../data/index'
+import { getModelHistory, downsampleMonthly } from '../data/priceHistory'
 import DiscountPanel from './DiscountPanel'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, LineChart, Line } from 'recharts'
 
@@ -91,36 +92,32 @@ function ModelDetailPage({ model, currency }) {
     return data.sort((a, b) => a.output - b.output)
   }, [model, currency])
 
-  // 24个月价格变化曲线（模拟数据 — 基于当前价格生成趋势）
-  // 在真实场景中，应从 price-history/YYYY-MM-DD.json 快照中读取历史数据
+  // 24个月价格变化曲线（真实数据 — 读取 price-history 快照）
+  // 每个平台一条线：基于真实快照中各平台的最低输出价序列（按月下采样）
   const priceHistory = useMemo(() => {
-    const now = new Date(2026, 7, 6) // 2026-08-06
-    const historyData = []
-    // 按平台生成模拟历史
+    const series = []
     for (const [platformId, price] of Object.entries(model.prices)) {
       if (price.output === null) continue
-      const platform = PLATFORMS.find(p => p.id === platformId)
-      const baseOutput = price.output
-      const points = []
-      // 模拟24个月价格波动（±15%随机振荡），越近越接近当前价格
-      for (let i = 23; i >= 0; i--) {
-        const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
-        const monthLabel = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
-        // 模拟缓慢下降 + 振荡
-        const drift = i * 0.003 // 越早越便宜的微妙趋势
-        const noise = (Math.random() - 0.5) * 0.25
-        const val = baseOutput * (1 - drift + noise)
-        points.push({ month: monthLabel, output: convertPrice(Math.max(val, 0), currency) })
-      }
-      historyData.push({
+      const platform = PLATFORMS.find((p) => p.id === platformId)
+      const raw = getModelHistory(model.id, platformId, 'output')
+        .map((p) => ({
+          month: p.date.slice(0, 7),
+          output: p.value == null ? null : convertPrice(p.value, currency),
+        }))
+        .filter((p) => p.output != null)
+      const points = downsampleMonthly(raw)
+      if (points.length === 0) continue
+      series.push({
         platformId,
         platformName: platform?.nameCn || platformId,
         color: platform?.color || '#999',
         points,
       })
     }
-    return historyData
+    return series
   }, [model, currency])
+
+  const hasHistory = priceHistory.length > 0 && priceHistory.some((s) => s.points.length > 1)
 
   return (
     <div className="space-y-6">
@@ -186,7 +183,7 @@ function ModelDetailPage({ model, currency }) {
       {/* 24个月价格变化曲线 */}
       <div className="card p-5">
         <h3 className="text-sm font-semibold text-dx-gray-700 mb-4">24个月价格变化趋势</h3>
-        {priceHistory.length > 0 ? (
+        {hasHistory ? (
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
@@ -220,10 +217,14 @@ function ModelDetailPage({ model, currency }) {
             </ResponsiveContainer>
           </div>
         ) : (
-          <p className="text-sm text-dx-gray-400 py-8 text-center">暂无历史价格数据</p>
+          <div className="text-sm text-dx-gray-400 py-12 text-center">
+            <div className="text-3xl mb-2">📊</div>
+            <p>数据积累中</p>
+            <p className="text-xs mt-1">每日采集真实快照，曲线将随时间自动变长</p>
+          </div>
         )}
         <p className="text-xs text-dx-gray-400 mt-2 text-center">
-          * 历史数据基于当前价格模拟生成，真实数据将在 daily-fetch 积累后自动填充
+          * 数据来自每日真实快照（price-history/），非模拟
         </p>
       </div>
 

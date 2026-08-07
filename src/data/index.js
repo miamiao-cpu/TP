@@ -7,10 +7,11 @@
  *   discounts.js    → 手动维护折扣信息
  */
 
-import rawPrices from './prices.json'
-import MANUAL_MODELS from './models'
-import DISCOUNTS from './discounts'
-import { PLATFORMS, COUNTRIES, REGIONS, MODALITIES, CHANGE_TYPES } from './constants'
+import rawPrices from './prices.json' with { type: 'json' }
+import MANUAL_MODELS from './models.js'
+import DISCOUNTS from './discounts.js'
+import { PLATFORMS, COUNTRIES, REGIONS, MODALITIES, CHANGE_TYPES } from './constants.js'
+import { getRecentChanges as getRecentChangesFromHistory, getSnapshotCount } from './priceHistory.js'
 
 // ============================================================
 // 平台地域映射（从 PLATFORMS 常量自动获取）
@@ -97,6 +98,7 @@ function guessProvider(id) {
   if (id.startsWith('yi-')) return '零一万物'
   if (id.startsWith('kimi')) return '月之暗面'
   if (id.startsWith('ernie')) return '百度'
+  if (id.startsWith('sonar')) return 'Perplexity'
   return 'Unknown'
 }
 
@@ -245,33 +247,32 @@ export function getStats() {
   return { total, platformCount, modalityCounts, cheapestOutput }
 }
 
-// 获取最近价格变化（新进榜/涨价/降价），用于首页 logo 展示
-// 说明：数据仅记录 updated 日期，变化类型由简单规则推断（此处以"更新日期"为维度列出近期变动）
+// 获取最近价格变化（真实涨跌/新进榜），用于首页 logo 展示
+// 数据来源：对比 price-history/ 中最近两份真实快照，无任何推测/模拟
 export function getRecentChanges(limit = 8) {
+  const raw = getRecentChangesFromHistory(limit)
   const models = getModels()
-  const changes = []
-  for (const m of models) {
-    const prices = Object.values(m.prices || {})
-    if (prices.length === 0) continue
-    const latestDate = prices.reduce((max, p) => {
-      if (!p.updated) return max
-      return (!max || p.updated > max) ? p.updated : max
-    }, null)
-    if (latestDate) {
-      // 简单规则：更新日期越新视为"新进榜/近期变动"（auto 来源标注为新进，否则按更新展示）
-      const isNew = prices.some(p => p.source === 'auto' && p.updated === latestDate)
-      changes.push({
-        model: m.name,
-        modelId: m.id,
-        country: m.country,
-        modality: m.modality,
-        tag: m.tag,
-        date: latestDate,
-        changeType: isNew ? 'new' : 'down', // 手动录入默认视为价格刷新（绿色），可后续接入真实涨跌
-      })
+  const modelMap = Object.fromEntries(models.map((m) => [m.id, m]))
+  return raw.map((c) => {
+    const m = modelMap[c.modelId]
+    return {
+      model: m?.name || c.modelId,
+      modelId: c.modelId,
+      country: m?.country,
+      modality: m?.modality,
+      tag: m?.tag,
+      date: c.date,
+      changeType: c.changeType, // new | up | down（真实）
+      prev: c.prev,
+      curr: c.curr,
+      pct: c.pct,
     }
-  }
-  return changes.sort((a, b) => b.date.localeCompare(a.date)).slice(0, limit)
+  })
+}
+
+// 真实历史快照计数（用于前端"数据积累中"提示；0 = 仅有≤1份快照）
+export function getHistorySnapshotCount() {
+  return getSnapshotCount()
 }
 
 export default getModels

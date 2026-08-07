@@ -55,6 +55,7 @@ export const PLATFORMS = [
   { id: 'xai', name: 'xAI', nameCn: 'xAI', country: 'US', type: 'official', color: '#1DA1F2', url: 'https://x.ai' },
   { id: 'mistral', name: 'Mistral', nameCn: 'Mistral', country: 'FR', type: 'official', color: '#F70000', url: 'https://mistral.ai' },
   { id: 'openrouter', name: 'OpenRouter', nameCn: 'OpenRouter', country: 'US', type: 'proxy', color: '#6366F1', url: 'https://openrouter.ai' },
+  { id: 'perplexity', name: 'Perplexity', nameCn: 'Perplexity', country: 'US', type: 'official', color: '#20B2AA', url: 'https://perplexity.ai' },
   // 中国
   { id: 'bailian', name: 'Bailian', nameCn: '百炼', country: 'CN', type: 'official', color: '#FF6A00', url: 'https://bailian.console.aliyun.com' },
   { id: 'volcengine', name: 'Volcengine', nameCn: '火山引擎', country: 'CN', type: 'official', color: '#3370FF', url: 'https://www.volcengine.com' },

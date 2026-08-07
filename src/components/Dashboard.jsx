@@ -251,6 +251,44 @@ export default function Dashboard({ models, platforms }) {
       {/* 第四行：平台排行 + 最近更新 */}
       <div className="grid lg:grid-cols-2 gap-6">
         <div className="card p-0 overflow-hidden">
+          <div className="px-4 py-3 bg-dx-gray-100 text-sm font-semibold text-dx-gray-700 flex items-center justify-between">
+            <span>最近价格变动</span>
+            <span className="text-xs font-normal text-dx-gray-400">真实快照对比</span>
+          </div>
+          {recentChanges.length === 0 ? (
+            <div className="px-4 py-8 text-center">
+              <div className="text-2xl mb-1">📊</div>
+              <p className="text-xs text-dx-gray-400">数据积累中</p>
+              <p className="text-xs text-dx-gray-400 mt-0.5">每日采集真实快照，次日即可显示涨跌</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-dx-gray-50">
+              {recentChanges.map((item, i) => {
+                const ch = CHANGE_TYPES[item.changeType] || CHANGE_TYPES.down
+                const pctText = item.changeType === 'new'
+                  ? '新进'
+                  : `${item.pct > 0 ? '+' : ''}${item.pct.toFixed(1)}%`
+                return (
+                  <div key={i} className="px-4 py-2.5 flex items-center justify-between hover:bg-dx-gray-50 transition-colors">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded ${ch.bg} ${ch.color} text-xs font-medium shrink-0`}>
+                        <span>{ch.icon}</span>
+                        <span>{ch.label}</span>
+                      </span>
+                      <span className="text-sm font-medium text-dx-gray-900 truncate">{item.model}</span>
+                      {item.tag && <ModelTag tag={item.tag} />}
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="text-xs font-mono font-semibold text-dx-gray-700">{pctText}</span>
+                      <span className="text-xs text-dx-gray-400 font-mono">{item.date}</span>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+        <div className="card p-0 overflow-hidden">
           <div className="px-4 py-3 bg-dx-gray-800 text-white font-semibold text-sm">
             TOP50 平台模型覆盖排行
           </div>
@@ -274,29 +312,7 @@ export default function Dashboard({ models, platforms }) {
           </div>
         </div>
 
-        <div className="card p-0 overflow-hidden">
-          <div className="px-4 py-3 bg-dx-gray-100 text-sm font-semibold text-dx-gray-700">
-            最近数据更新
-          </div>
-          <div className="divide-y divide-dx-gray-50">
-            {recentChanges.map((item, i) => {
-              const ch = CHANGE_TYPES[item.changeType] || CHANGE_TYPES.down
-              return (
-                <div key={i} className="px-4 py-2.5 flex items-center justify-between hover:bg-dx-gray-50 transition-colors">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded ${ch.bg} ${ch.color} text-xs font-medium shrink-0`}>
-                      <span>{ch.icon}</span>
-                      <span>{ch.label}</span>
-                    </span>
-                    <span className="text-sm font-medium text-dx-gray-900 truncate">{item.model}</span>
-                    {item.tag && <ModelTag tag={item.tag} />}
-                  </div>
-                  <span className="text-xs text-dx-gray-400 font-mono shrink-0">{item.date}</span>
-                </div>
-              )
-            })}
-          </div>
-        </div>
+
       </div>
     </div>
   )

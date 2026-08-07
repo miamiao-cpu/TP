@@ -1,12 +1,12 @@
 {
   "_meta": {
-    "generatedAt": "2026-08-06T11:07:50.231Z",
+    "generatedAt": "2026-08-07T05:28:27.797Z",
     "sources": [
       "openrouter"
     ],
     "exchangeRate": 7.25,
     "currency": "CNY/百万Token",
-    "version": 3
+    "version": 3.1
   },
   "prices": {
     "deepseek-v4-flash": {
@@ -17,7 +17,7 @@
         "batch": null,
         "contextLength": 1048576,
         "source": "auto",
-        "updated": "2026-08-06"
+        "updated": "2026-08-07"
       }
     },
     "claude-opus-5": {
@@ -28,40 +28,18 @@
         "batch": null,
         "contextLength": 1000000,
         "source": "auto",
-        "updated": "2026-08-06"
+        "updated": "2026-08-07"
       }
     },
-    "gemini-3.6-flash": {
+    "kimi-k3": {
       "openrouter": {
-        "input": 10.88,
-        "output": 54.38,
-        "cache": 1.09,
+        "input": 21.75,
+        "output": 108.75,
+        "cache": 2.17,
         "batch": null,
         "contextLength": 1048576,
         "source": "auto",
-        "updated": "2026-08-06"
-      }
-    },
-    "gpt-5.6-luna": {
-      "openrouter": {
-        "input": 0.73,
-        "output": 4.35,
-        "cache": 0.07,
-        "batch": null,
-        "contextLength": 1050000,
-        "source": "auto",
-        "updated": "2026-08-06"
-      }
-    },
-    "claude-sonnet-5": {
-      "openrouter": {
-        "input": 14.5,
-        "output": 72.5,
-        "cache": 1.45,
-        "batch": null,
-        "contextLength": 1000000,
-        "source": "auto",
-        "updated": "2026-08-06"
+        "updated": "2026-08-07"
       }
     },
     "claude-fable-5": {
@@ -72,10 +50,10 @@
         "batch": null,
         "contextLength": 1000000,
         "source": "auto",
-        "updated": "2026-08-06"
+        "updated": "2026-08-07"
       }
     },
-    "grok-4": {
+    "grok-4.3": {
       "openrouter": {
         "input": 9.06,
         "output": 18.13,
@@ -83,18 +61,62 @@
         "batch": null,
         "contextLength": 1000000,
         "source": "auto",
-        "updated": "2026-08-06"
+        "updated": "2026-08-07"
       }
     },
-    "gemini-3.1-pro": {
+    "gpt-5.5-pro": {
       "openrouter": {
-        "input": 14.5,
-        "output": 87,
-        "cache": 1.45,
+        "input": 217.5,
+        "output": 1305,
+        "cache": null,
+        "batch": null,
+        "contextLength": 1050000,
+        "source": "auto",
+        "updated": "2026-08-07"
+      }
+    },
+    "deepseek-v4-pro": {
+      "openrouter": {
+        "input": 3.15,
+        "output": 6.31,
+        "cache": 0.03,
         "batch": null,
         "contextLength": 1048576,
         "source": "auto",
-        "updated": "2026-08-06"
+        "updated": "2026-08-07"
+      }
+    },
+    "gpt-image-2": {
+      "openrouter": {
+        "input": 58,
+        "output": 108.75,
+        "cache": 14.5,
+        "batch": null,
+        "contextLength": 272000,
+        "source": "auto",
+        "updated": "2026-08-07"
+      }
+    },
+    "gpt-5.4": {
+      "openrouter": {
+        "input": 18.13,
+        "output": 108.75,
+        "cache": 1.81,
+        "batch": null,
+        "contextLength": 1050000,
+        "source": "auto",
+        "updated": "2026-08-07"
+      }
+    },
+    "claude-sonnet-4.6": {
+      "openrouter": {
+        "input": 21.75,
+        "output": 108.75,
+        "cache": 2.17,
+        "batch": null,
+        "contextLength": 1000000,
+        "source": "auto",
+        "updated": "2026-08-07"
       }
     },
     "mistral-large-3": {
@@ -105,18 +127,7 @@
         "batch": null,
         "contextLength": 262144,
         "source": "auto",
-        "updated": "2026-08-06"
-      }
-    },
-    "deepseek-v3.2": {
-      "openrouter": {
-        "input": 1.95,
-        "output": 2.9,
-        "cache": 0.98,
-        "batch": null,
-        "contextLength": 163840,
-        "source": "auto",
-        "updated": "2026-08-06"
+        "updated": "2026-08-07"
       }
     },
     "claude-haiku-4.5": {
@@ -127,18 +138,51 @@
         "batch": null,
         "contextLength": 200000,
         "source": "auto",
-        "updated": "2026-08-06"
+        "updated": "2026-08-07"
       }
     },
-    "gpt-5-mini": {
+    "gpt-5": {
       "openrouter": {
-        "input": 1.81,
-        "output": 14.5,
-        "cache": 0.18,
+        "input": 9.06,
+        "output": 72.5,
+        "cache": 0.91,
         "batch": null,
         "contextLength": 400000,
         "source": "auto",
-        "updated": "2026-08-06"
+        "updated": "2026-08-07"
+      }
+    },
+    "gemini-2.5-flash": {
+      "openrouter": {
+        "input": 2.17,
+        "output": 18.13,
+        "cache": 0.22,
+        "batch": null,
+        "contextLength": 1048576,
+        "source": "auto",
+        "updated": "2026-08-07"
+      }
+    },
+    "gemini-2.5-pro": {
+      "openrouter": {
+        "input": 9.06,
+        "output": 72.5,
+        "cache": 0.91,
+        "batch": null,
+        "contextLength": 1048576,
+        "source": "auto",
+        "updated": "2026-08-07"
+      }
+    },
+    "o3": {
+      "openrouter": {
+        "input": 14.5,
+        "output": 58,
+        "cache": 3.63,
+        "batch": null,
+        "contextLength": 200000,
+        "source": "auto",
+        "updated": "2026-08-07"
       }
     },
     "o4-mini": {
@@ -149,7 +193,40 @@
         "batch": null,
         "contextLength": 200000,
         "source": "auto",
-        "updated": "2026-08-06"
+        "updated": "2026-08-07"
+      }
+    },
+    "sonar-pro": {
+      "openrouter": {
+        "input": 21.75,
+        "output": 108.75,
+        "cache": null,
+        "batch": null,
+        "contextLength": 200000,
+        "source": "auto",
+        "updated": "2026-08-07"
+      }
+    },
+    "gpt-4o-mini": {
+      "openrouter": {
+        "input": 1.09,
+        "output": 4.35,
+        "cache": 0.54,
+        "batch": null,
+        "contextLength": 128000,
+        "source": "auto",
+        "updated": "2026-08-07"
+      }
+    },
+    "gpt-4o": {
+      "openrouter": {
+        "input": 18.13,
+        "output": 72.5,
+        "cache": 9.06,
+        "batch": null,
+        "contextLength": 128000,
+        "source": "auto",
+        "updated": "2026-08-07"
       }
     }
   }
