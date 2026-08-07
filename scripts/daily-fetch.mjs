@@ -22,7 +22,9 @@
 import { writeFileSync, mkdirSync, existsSync, readFileSync, readdirSync } from 'fs'
 import { resolve, dirname } from 'path'
 import { fileURLToPath } from 'url'
-import { getModels } from '../src/data/index.js'
+// 直接读取纯数据模块（Node 兼容），不经过 index.js（含 Vite 专属 import.meta.glob）
+import MANUAL_MODELS from '../src/data/models.js'
+import rawPrices from '../src/data/prices.json' with { type: 'json' }
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const DATA_DIR = resolve(__dirname, '../src/data')
@@ -146,8 +148,44 @@ function mergePrices(l1Data, existingPrices) {
 // 基于站点真实展示数据生成完整快照（L1+L2）
 // ============================================================
 
+// Node 兼容的模型列表构建（与 index.js buildModels 同逻辑，但不依赖 Vite 专属 API）
+function getModelsForSnapshot() {
+  const autoData = rawPrices.prices || {}
+  const modelMap = {}
+
+  for (const model of MANUAL_MODELS) {
+    modelMap[model.id] = {
+      ...model,
+      pricingUnit: model.pricingUnit || 'per_million_tokens',
+      modality: model.modality || 'text->text',
+      prices: model.prices || {},
+      contextLength: model.contextLength,
+    }
+  }
+
+  for (const [modelId, platformPrices] of Object.entries(autoData)) {
+    if (modelMap[modelId]) {
+      const mergedPrices = { ...modelMap[modelId].prices }
+      for (const [platformId, priceInfo] of Object.entries(platformPrices)) {
+        if (priceInfo.source === 'auto') {
+          mergedPrices[platformId] = priceInfo
+        }
+      }
+      modelMap[modelId].prices = mergedPrices
+    } else {
+      modelMap[modelId] = {
+        id: modelId,
+        prices: platformPrices,
+        contextLength: Object.values(platformPrices)[0]?.contextLength,
+      }
+    }
+  }
+
+  return Object.values(modelMap)
+}
+
 function buildFullSnapshot() {
-  const models = getModels()
+  const models = getModelsForSnapshot()
   const prices = {}
   for (const m of models) {
     if (!m.prices) continue
