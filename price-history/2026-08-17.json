@@ -1,0 +1,612 @@
+{
+  "_meta": {
+    "generatedAt": "2026-08-17T03:16:30.764Z",
+    "snapshotDate": "2026-08-17",
+    "sources": [
+      "openrouter",
+      "manual"
+    ],
+    "exchangeRate": 7.25,
+    "currency": "CNY/百万Token",
+    "version": 3.1,
+    "snapshotType": "full"
+  },
+  "prices": {
+    "gpt-5.5-pro": {
+      "openrouter": {
+        "input": 217.5,
+        "output": 1305,
+        "cache": null,
+        "batch": null,
+        "contextLength": 1050000,
+        "source": "auto",
+        "updated": "2026-08-10"
+      }
+    },
+    "gpt-5.4": {
+      "openrouter": {
+        "input": 18.13,
+        "output": 108.75,
+        "cache": 1.81,
+        "batch": null,
+        "contextLength": 1050000,
+        "source": "auto",
+        "updated": "2026-08-10"
+      }
+    },
+    "gpt-5": {
+      "openrouter": {
+        "input": 9.06,
+        "output": 72.5,
+        "cache": 0.91,
+        "batch": null,
+        "contextLength": 400000,
+        "source": "auto",
+        "updated": "2026-08-10"
+      }
+    },
+    "gpt-4o": {
+      "openrouter": {
+        "input": 18.13,
+        "output": 72.5,
+        "cache": 9.06,
+        "batch": null,
+        "contextLength": 128000,
+        "source": "auto",
+        "updated": "2026-08-10"
+      }
+    },
+    "gpt-4o-mini": {
+      "openrouter": {
+        "input": 1.09,
+        "output": 4.35,
+        "cache": 0.54,
+        "batch": null,
+        "contextLength": 128000,
+        "source": "auto",
+        "updated": "2026-08-10"
+      }
+    },
+    "o3": {
+      "openrouter": {
+        "input": 14.5,
+        "output": 58,
+        "cache": 3.63,
+        "batch": null,
+        "contextLength": 200000,
+        "source": "auto",
+        "updated": "2026-08-10"
+      }
+    },
+    "o4-mini": {
+      "openrouter": {
+        "input": 7.98,
+        "output": 31.9,
+        "cache": 1.99,
+        "batch": null,
+        "contextLength": 200000,
+        "source": "auto",
+        "updated": "2026-08-10"
+      }
+    },
+    "claude-opus-5": {
+      "openrouter": {
+        "input": 36.25,
+        "output": 181.25,
+        "cache": 3.63,
+        "batch": null,
+        "contextLength": 1000000,
+        "source": "auto",
+        "updated": "2026-08-10"
+      }
+    },
+    "claude-fable-5": {
+      "openrouter": {
+        "input": 72.5,
+        "output": 362.5,
+        "cache": 7.25,
+        "batch": null,
+        "contextLength": 1000000,
+        "source": "auto",
+        "updated": "2026-08-10"
+      }
+    },
+    "claude-sonnet-4.6": {
+      "openrouter": {
+        "input": 21.75,
+        "output": 108.75,
+        "cache": 2.17,
+        "batch": null,
+        "contextLength": 1000000,
+        "source": "auto",
+        "updated": "2026-08-10"
+      }
+    },
+    "claude-haiku-4.5": {
+      "openrouter": {
+        "input": 7.25,
+        "output": 36.25,
+        "cache": 0.73,
+        "batch": null,
+        "contextLength": 200000,
+        "source": "auto",
+        "updated": "2026-08-10"
+      }
+    },
+    "gemini-2.5-pro": {
+      "openrouter": {
+        "input": 9.06,
+        "output": 72.5,
+        "cache": 0.91,
+        "batch": null,
+        "contextLength": 1048576,
+        "source": "auto",
+        "updated": "2026-08-10"
+      }
+    },
+    "gemini-2.5-flash": {
+      "openrouter": {
+        "input": 2.17,
+        "output": 18.13,
+        "cache": 0.22,
+        "batch": null,
+        "contextLength": 1048576,
+        "source": "auto",
+        "updated": "2026-08-10"
+      }
+    },
+    "grok-4.3": {
+      "openrouter": {
+        "input": 9.06,
+        "output": 18.13,
+        "cache": 1.45,
+        "batch": null,
+        "contextLength": 1000000,
+        "source": "auto",
+        "updated": "2026-08-10"
+      }
+    },
+    "mistral-large-3": {
+      "openrouter": {
+        "input": 3.63,
+        "output": 10.88,
+        "cache": 0.36,
+        "batch": null,
+        "contextLength": 262144,
+        "source": "auto",
+        "updated": "2026-08-10"
+      }
+    },
+    "deepseek-v4-pro": {
+      "deepseek": {
+        "input": 3.17,
+        "output": 6.34,
+        "cache": 0.18,
+        "batch": null,
+        "contextLength": 1049000,
+        "source": "manual",
+        "updated": "2026-08-07"
+      },
+      "openrouter": {
+        "input": 3.15,
+        "output": 6.31,
+        "cache": 0.03,
+        "batch": null,
+        "contextLength": 1048576,
+        "source": "auto",
+        "updated": "2026-08-10"
+      },
+      "siliconflow": {
+        "input": 3.17,
+        "output": 6.34,
+        "cache": null,
+        "batch": null,
+        "contextLength": 1049000,
+        "source": "manual",
+        "updated": "2026-08-07"
+      }
+    },
+    "deepseek-v4-flash": {
+      "deepseek": {
+        "input": 0.64,
+        "output": 1.28,
+        "cache": 0.1,
+        "batch": null,
+        "contextLength": 1049000,
+        "source": "manual",
+        "updated": "2026-08-07"
+      },
+      "openrouter": {
+        "input": 1.02,
+        "output": 2.03,
+        "cache": 0.2,
+        "batch": null,
+        "contextLength": 1048576,
+        "source": "auto",
+        "updated": "2026-08-10"
+      },
+      "siliconflow": {
+        "input": 0.64,
+        "output": 1.28,
+        "cache": null,
+        "batch": null,
+        "contextLength": 1049000,
+        "source": "manual",
+        "updated": "2026-08-07"
+      }
+    },
+    "qwen-max": {
+      "bailian": {
+        "input": 20,
+        "output": 60,
+        "cache": null,
+        "batch": null,
+        "contextLength": 32000,
+        "source": "manual",
+        "updated": "2026-08-07"
+      },
+      "siliconflow": {
+        "input": 16,
+        "output": 48,
+        "cache": null,
+        "batch": null,
+        "contextLength": 32000,
+        "source": "manual",
+        "updated": "2026-08-07"
+      }
+    },
+    "qwen-plus": {
+      "bailian": {
+        "input": 4,
+        "output": 12,
+        "cache": 2,
+        "batch": null,
+        "contextLength": 131072,
+        "source": "manual",
+        "updated": "2026-08-07"
+      },
+      "siliconflow": {
+        "input": 3,
+        "output": 9,
+        "cache": null,
+        "batch": null,
+        "contextLength": 131072,
+        "source": "manual",
+        "updated": "2026-08-07"
+      }
+    },
+    "qwen-turbo": {
+      "bailian": {
+        "input": 2,
+        "output": 6,
+        "cache": null,
+        "batch": null,
+        "contextLength": 131072,
+        "source": "manual",
+        "updated": "2026-08-07"
+      }
+    },
+    "doubao-seed-2.1-pro": {
+      "volcengine": {
+        "input": 6,
+        "output": 30,
+        "cache": 1.2,
+        "batch": 3,
+        "contextLength": 128000,
+        "source": "manual",
+        "updated": "2026-08-07"
+      }
+    },
+    "doubao-seed-2.1-turbo": {
+      "volcengine": {
+        "input": 3,
+        "output": 15,
+        "cache": 0.6,
+        "batch": 1.5,
+        "contextLength": 128000,
+        "source": "manual",
+        "updated": "2026-08-07"
+      }
+    },
+    "glm-5.2": {
+      "zhipu": {
+        "input": 8,
+        "output": 28,
+        "cache": 2,
+        "batch": null,
+        "contextLength": 1000000,
+        "source": "manual",
+        "updated": "2026-08-07"
+      }
+    },
+    "glm-4-flash": {
+      "zhipu": {
+        "input": 0,
+        "output": 0,
+        "cache": null,
+        "batch": null,
+        "contextLength": 128000,
+        "source": "manual",
+        "updated": "2026-08-07"
+      }
+    },
+    "hunyuan-pro": {
+      "tencent": {
+        "input": 16,
+        "output": 48,
+        "cache": null,
+        "batch": null,
+        "contextLength": 128000,
+        "source": "manual",
+        "updated": "2026-08-07"
+      }
+    },
+    "hunyuan-lite": {
+      "tencent": {
+        "input": 0,
+        "output": 0,
+        "cache": null,
+        "batch": null,
+        "contextLength": 8000,
+        "source": "manual",
+        "updated": "2026-08-07"
+      }
+    },
+    "minimax-m2.7": {
+      "minimax": {
+        "input": 0.8,
+        "output": 5.8,
+        "cache": null,
+        "batch": null,
+        "contextLength": 1048576,
+        "source": "manual",
+        "updated": "2026-08-07"
+      },
+      "siliconflow": {
+        "input": 0.8,
+        "output": 5.8,
+        "cache": null,
+        "batch": null,
+        "contextLength": 1048576,
+        "source": "manual",
+        "updated": "2026-08-07"
+      }
+    },
+    "kimi-k3": {
+      "kimi": {
+        "input": 4,
+        "output": 16,
+        "cache": 1,
+        "batch": null,
+        "contextLength": 1049000,
+        "source": "manual",
+        "updated": "2026-08-07"
+      },
+      "openrouter": {
+        "input": 21.75,
+        "output": 108.75,
+        "cache": 2.17,
+        "batch": null,
+        "contextLength": 1048576,
+        "source": "auto",
+        "updated": "2026-08-10"
+      }
+    },
+    "ernie-4.5": {
+      "ernie": {
+        "input": 8,
+        "output": 24,
+        "cache": null,
+        "batch": null,
+        "contextLength": 128000,
+        "source": "manual",
+        "updated": "2026-08-07"
+      }
+    },
+    "sonar-pro": {
+      "openrouter": {
+        "input": 21.75,
+        "output": 108.75,
+        "cache": null,
+        "batch": null,
+        "contextLength": 200000,
+        "source": "auto",
+        "updated": "2026-08-10"
+      }
+    },
+    "gpt-image-2": {
+      "openrouter": {
+        "input": 58,
+        "output": 108.75,
+        "cache": 14.5,
+        "batch": null,
+        "contextLength": 272000,
+        "source": "auto",
+        "updated": "2026-08-10"
+      }
+    },
+    "dall-e-4": {
+      "openai": {
+        "input": null,
+        "output": 14.5,
+        "cache": null,
+        "batch": null,
+        "contextLength": 0,
+        "source": "manual",
+        "updated": "2026-08-07"
+      }
+    },
+    "gemini-imagen-4": {
+      "openrouter": {
+        "input": null,
+        "output": 7.25,
+        "cache": null,
+        "batch": null,
+        "contextLength": 0,
+        "source": "auto",
+        "updated": "2026-08-07"
+      }
+    },
+    "flux-2-pro": {
+      "fal": {
+        "input": null,
+        "output": 1.45,
+        "cache": null,
+        "batch": null,
+        "contextLength": 0,
+        "source": "manual",
+        "updated": "2026-08-07"
+      },
+      "openrouter": {
+        "input": null,
+        "output": 1.45,
+        "cache": null,
+        "batch": null,
+        "contextLength": 0,
+        "source": "auto",
+        "updated": "2026-08-07"
+      }
+    },
+    "stable-diffusion-4": {
+      "stability": {
+        "input": null,
+        "output": 0.73,
+        "cache": null,
+        "batch": null,
+        "contextLength": 0,
+        "source": "manual",
+        "updated": "2026-08-07"
+      },
+      "fal": {
+        "input": null,
+        "output": 0.58,
+        "cache": null,
+        "batch": null,
+        "contextLength": 0,
+        "source": "manual",
+        "updated": "2026-08-07"
+      }
+    },
+    "wanx-image": {
+      "wanx": {
+        "input": null,
+        "output": 0.4,
+        "cache": null,
+        "batch": null,
+        "contextLength": 0,
+        "source": "manual",
+        "updated": "2026-08-07"
+      }
+    },
+    "jimeng-image": {
+      "jimeng": {
+        "input": null,
+        "output": 0.29,
+        "cache": null,
+        "batch": null,
+        "contextLength": 0,
+        "source": "manual",
+        "updated": "2026-08-07"
+      }
+    },
+    "doubao-image": {
+      "volcengine": {
+        "input": null,
+        "output": 0.15,
+        "cache": null,
+        "batch": null,
+        "contextLength": 0,
+        "source": "manual",
+        "updated": "2026-08-07"
+      }
+    },
+    "sora-3": {
+      "openai": {
+        "input": null,
+        "output": 14.5,
+        "cache": null,
+        "batch": null,
+        "contextLength": 0,
+        "source": "manual",
+        "updated": "2026-08-07"
+      }
+    },
+    "veo-4": {
+      "openrouter": {
+        "input": null,
+        "output": 10.88,
+        "cache": null,
+        "batch": null,
+        "contextLength": 0,
+        "source": "auto",
+        "updated": "2026-08-07"
+      }
+    },
+    "runway-gen4": {
+      "runway": {
+        "input": null,
+        "output": 9.06,
+        "cache": null,
+        "batch": null,
+        "contextLength": 0,
+        "source": "manual",
+        "updated": "2026-08-07"
+      }
+    },
+    "luma-ray-3": {
+      "luma": {
+        "input": null,
+        "output": 5.8,
+        "cache": null,
+        "batch": null,
+        "contextLength": 0,
+        "source": "manual",
+        "updated": "2026-08-07"
+      }
+    },
+    "kling-2.5": {
+      "kling": {
+        "input": null,
+        "output": 7.25,
+        "cache": null,
+        "batch": null,
+        "contextLength": 0,
+        "source": "manual",
+        "updated": "2026-08-07"
+      }
+    },
+    "seedance-2": {
+      "seedance": {
+        "input": null,
+        "output": 8.7,
+        "cache": null,
+        "batch": null,
+        "contextLength": 0,
+        "source": "manual",
+        "updated": "2026-08-07"
+      }
+    },
+    "jimeng-video": {
+      "jimeng": {
+        "input": null,
+        "output": 4.35,
+        "cache": null,
+        "batch": null,
+        "contextLength": 0,
+        "source": "manual",
+        "updated": "2026-08-07"
+      }
+    },
+    "hunyuan-video": {
+      "tencent": {
+        "input": null,
+        "output": 3.63,
+        "cache": null,
+        "batch": null,
+        "contextLength": 0,
+        "source": "manual",
+        "updated": "2026-08-07"
+      }
+    }
+  }
+}
