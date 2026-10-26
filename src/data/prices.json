@@ -1,6 +1,6 @@
 {
   "_meta": {
-    "generatedAt": "2026-10-19T03:58:38.444Z",
+    "generatedAt": "2026-10-26T04:01:36.576Z",
     "sources": [
       "openrouter"
     ],
@@ -17,7 +17,7 @@
         "batch": null,
         "contextLength": 1048576,
         "source": "auto",
-        "updated": "2026-10-19"
+        "updated": "2026-10-26"
       }
     },
     "claude-opus-5": {
@@ -28,18 +28,18 @@
         "batch": null,
         "contextLength": 1000000,
         "source": "auto",
-        "updated": "2026-10-19"
+        "updated": "2026-10-26"
       }
     },
     "kimi-k3": {
       "openrouter": {
-        "input": 1.73,
-        "output": 86.54,
-        "cache": 1.52,
+        "input": 1.46,
+        "output": 145,
+        "cache": 1.39,
         "batch": null,
         "contextLength": 1048576,
         "source": "auto",
-        "updated": "2026-10-19"
+        "updated": "2026-10-26"
       }
     },
     "claude-fable-5": {
@@ -50,7 +50,7 @@
         "batch": null,
         "contextLength": 1000000,
         "source": "auto",
-        "updated": "2026-10-19"
+        "updated": "2026-10-26"
       }
     },
     "grok-4.3": {
@@ -61,7 +61,7 @@
         "batch": null,
         "contextLength": 1000000,
         "source": "auto",
-        "updated": "2026-10-19"
+        "updated": "2026-10-26"
       }
     },
     "gpt-5.5-pro": {
@@ -72,7 +72,7 @@
         "batch": null,
         "contextLength": 1050000,
         "source": "auto",
-        "updated": "2026-10-19"
+        "updated": "2026-10-26"
       }
     },
     "deepseek-v4-pro": {
@@ -83,7 +83,7 @@
         "batch": null,
         "contextLength": 1048576,
         "source": "auto",
-        "updated": "2026-10-19"
+        "updated": "2026-10-26"
       }
     },
     "gpt-image-2": {
@@ -94,7 +94,7 @@
         "batch": null,
         "contextLength": 272000,
         "source": "auto",
-        "updated": "2026-10-19"
+        "updated": "2026-10-26"
       }
     },
     "gpt-5.4": {
@@ -105,7 +105,7 @@
         "batch": null,
         "contextLength": 1050000,
         "source": "auto",
-        "updated": "2026-10-19"
+        "updated": "2026-10-26"
       }
     },
     "claude-sonnet-4.6": {
@@ -116,7 +116,7 @@
         "batch": null,
         "contextLength": 1000000,
         "source": "auto",
-        "updated": "2026-10-19"
+        "updated": "2026-10-26"
       }
     },
     "mistral-large-3": {
@@ -127,7 +127,7 @@
         "batch": null,
         "contextLength": 262144,
         "source": "auto",
-        "updated": "2026-10-19"
+        "updated": "2026-10-26"
       }
     },
     "claude-haiku-4.5": {
@@ -138,7 +138,7 @@
         "batch": null,
         "contextLength": 200000,
         "source": "auto",
-        "updated": "2026-10-19"
+        "updated": "2026-10-26"
       }
     },
     "gpt-5": {
@@ -149,7 +149,7 @@
         "batch": null,
         "contextLength": 400000,
         "source": "auto",
-        "updated": "2026-10-19"
+        "updated": "2026-10-26"
       }
     },
     "gemini-2.5-flash": {
@@ -160,7 +160,7 @@
         "batch": null,
         "contextLength": 1048576,
         "source": "auto",
-        "updated": "2026-10-19"
+        "updated": "2026-10-26"
       }
     },
     "gemini-2.5-pro": {
@@ -171,7 +171,7 @@
         "batch": null,
         "contextLength": 1048576,
         "source": "auto",
-        "updated": "2026-10-19"
+        "updated": "2026-10-26"
       }
     },
     "o3": {
@@ -182,7 +182,7 @@
         "batch": null,
         "contextLength": 200000,
         "source": "auto",
-        "updated": "2026-10-19"
+        "updated": "2026-10-26"
       }
     },
     "o4-mini": {
@@ -193,7 +193,7 @@
         "batch": null,
         "contextLength": 200000,
         "source": "auto",
-        "updated": "2026-10-19"
+        "updated": "2026-10-26"
       }
     },
     "sonar-pro": {
@@ -204,7 +204,7 @@
         "batch": null,
         "contextLength": 200000,
         "source": "auto",
-        "updated": "2026-10-19"
+        "updated": "2026-10-26"
       }
     },
     "gpt-4o-mini": {
@@ -215,7 +215,7 @@
         "batch": null,
         "contextLength": 128000,
         "source": "auto",
-        "updated": "2026-10-19"
+        "updated": "2026-10-26"
       }
     },
     "gpt-4o": {
@@ -226,7 +226,7 @@
         "batch": null,
         "contextLength": 128000,
         "source": "auto",
-        "updated": "2026-10-19"
+        "updated": "2026-10-26"
       }
     }
   }
